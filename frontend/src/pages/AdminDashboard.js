@@ -10,16 +10,8 @@ const AdminDashboard = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
-  const [selectedType, setSelectedType] = useState('');
-
-  const imageTypes = [
-    { value: 'english-day1', label: 'English - Day 1 (27th Sept)' },
-    { value: 'english-day2', label: 'English - Day 2 (28th Sept)' },
-    { value: 'english-both', label: 'English - Both Days' },
-    { value: 'hindi-day1', label: 'Hindi - Day 1 (27th Sept)' },
-    { value: 'hindi-day2', label: 'Hindi - Day 2 (28th Sept)' },
-    { value: 'hindi-both', label: 'Hindi - Both Days' }
-  ];
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
 
   useEffect(() => {
     // Set admin token for API calls
@@ -37,9 +29,11 @@ const AdminDashboard = () => {
   const fetchPromoImages = async () => {
     try {
       const response = await api.get('/admin/promo-images');
-      setPromoImages(response.data.images);
+      setPromoImages(response.data.images || []);
     } catch (err) {
-      setError('Failed to fetch promotional images');
+      console.error('Fetch promo images error:', err);
+      setError(err.response?.data?.message || 'Failed to fetch promotional images');
+      setPromoImages([]);
     } finally {
       setLoading(false);
     }
@@ -52,8 +46,8 @@ const AdminDashboard = () => {
   const handleUpload = async (e) => {
     e.preventDefault();
     
-    if (!selectedFile || !selectedType) {
-      setError('Please select a file and image type');
+    if (!selectedFile) {
+      setError('Please select a file');
       return;
     }
 
@@ -64,7 +58,8 @@ const AdminDashboard = () => {
     try {
       const formData = new FormData();
       formData.append('promoImage', selectedFile);
-      formData.append('type', selectedType);
+      formData.append('title', title || 'Promotional Event');
+      formData.append('description', description);
 
       await api.post('/admin/upload-promo-image', formData, {
         headers: {
@@ -72,9 +67,10 @@ const AdminDashboard = () => {
         },
       });
 
-      setSuccess('Promotional image uploaded successfully!');
+      setSuccess('Promotional image uploaded successfully! It will appear in the user table.');
       setSelectedFile(null);
-      setSelectedType('');
+      setTitle('');
+      setDescription('');
       
       // Reset form
       document.getElementById('upload-form').reset();
@@ -124,13 +120,22 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="admin-dashboard">
-      <div className="admin-header">
-        <h1>Admin Dashboard</h1>
-        <button onClick={handleLogout} className="logout-button">
-          Logout
-        </button>
-      </div>
+    <div className="modern-app">
+      {/* Modern Admin Navigation */}
+      <nav className="modern-navbar">
+        <div className="navbar-container">
+          <div className="navbar-brand">
+            ⚙️ Admin Dashboard
+          </div>
+          <div className="navbar-nav">
+            <button onClick={handleLogout} className="nav-button">
+              🚪 Logout
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <div className="admin-dashboard">
 
       {error && <div className="error-message">{error}</div>}
       {success && <div className="success-message">{success}</div>}
@@ -140,7 +145,29 @@ const AdminDashboard = () => {
         <h2>Upload Promotional Image</h2>
         <form id="upload-form" onSubmit={handleUpload} className="upload-form">
           <div className="form-group">
-            <label className="form-label">Select Base Promotional Image:</label>
+            <label className="form-label">Event Title:</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g., Property Expo 2025, Business Summit, etc."
+              className="form-input"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Description (Optional):</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Brief description of the event"
+              className="form-input"
+              rows="3"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Select Promotional Image:</label>
             <input
               type="file"
               accept="image/*"
@@ -149,25 +176,8 @@ const AdminDashboard = () => {
               className="form-input file-input"
             />
             <small style={{ color: '#666', marginTop: '5px', display: 'block' }}>
-              Upload the promotional image. User details will be automatically added to the bottom.
+              Upload the promotional image. User details will be automatically added for personalization. This image will be used for both English and Hindi versions.
             </small>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Image Type:</label>
-            <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              required
-              className="form-input"
-            >
-              <option value="">Choose which version this is for...</option>
-              {imageTypes.map(type => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
           </div>
 
           <button
@@ -175,7 +185,7 @@ const AdminDashboard = () => {
             disabled={uploadLoading}
             className="form-button"
           >
-            {uploadLoading ? 'Uploading...' : 'Upload Promotional Image'}
+            {uploadLoading ? 'Uploading...' : 'Upload & Publish to Users'}
           </button>
         </form>
       </div>
@@ -183,57 +193,53 @@ const AdminDashboard = () => {
       {/* Images List */}
       <div className="images-section">
         <h2>Promotional Images</h2>
-        {promoImages.length === 0 ? (
+        {!promoImages || promoImages.length === 0 ? (
           <p>No promotional images uploaded yet.</p>
         ) : (
           <div className="images-grid">
-            {imageTypes.map(type => (
-              <div key={type.value} className="image-type-section">
-                <h3>{type.label}</h3>
-                {promoImages
-                  .filter(img => img.type === type.value)
-                  .map(image => (
-                    <div key={image.id} className="image-card">
-                      <img
-                        src={`http://localhost:5000${image.imageUrl}`}
-                        alt={image.originalName}
-                        className="preview-image"
-                      />
-                      <div className="image-info">
-                        <p><strong>File:</strong> {image.originalName}</p>
-                        <p><strong>Status:</strong> 
-                          <span className={image.isActive ? 'active-status' : 'inactive-status'}>
-                            {image.isActive ? ' Active' : ' Inactive'}
-                          </span>
-                        </p>
-                        <p><strong>Uploaded:</strong> {new Date(image.createdAt).toLocaleDateString()}</p>
-                      </div>
-                      <div className="image-actions">
-                        {!image.isActive && (
-                          <button
-                            onClick={() => handleActivate(image.id)}
-                            className="activate-button"
-                          >
-                            Activate
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleDelete(image.id)}
-                          className="delete-button"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                {promoImages.filter(img => img.type === type.value).length === 0 && (
-                  <p className="no-images">No images uploaded for this type</p>
-                )}
+            {promoImages.map(image => (
+              <div key={image.id || image._id} className="image-card">
+                <img
+                  src={`http://localhost:5000${image.imageUrl}`}
+                  alt={image.originalName || 'Promotional Image'}
+                  className="preview-image"
+                />
+                <div className="image-info">
+                  <p><strong>Title:</strong> {image.title || 'Promotional Event'}</p>
+                  {image.description && (
+                    <p><strong>Description:</strong> {image.description}</p>
+                  )}
+                  <p><strong>File:</strong> {image.originalName || 'Unknown'}</p>
+                  <p><strong>Event Date:</strong> {image.eventDate ? new Date(image.eventDate).toLocaleDateString() : 'Unknown'}</p>
+                  <p><strong>Status:</strong> 
+                    <span className={image.isActive ? 'active-status' : 'inactive-status'}>
+                      {image.isActive ? ' Active (Visible to Users)' : ' Inactive'}
+                    </span>
+                  </p>
+                  <p><strong>Uploaded:</strong> {image.createdAt ? new Date(image.createdAt).toLocaleDateString() : 'Unknown'}</p>
+                </div>
+                <div className="image-actions">
+                  {!image.isActive && (
+                    <button
+                      onClick={() => handleActivate(image.id || image._id)}
+                      className="activate-button"
+                    >
+                      Activate
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDelete(image.id || image._id)}
+                    className="delete-button"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 };

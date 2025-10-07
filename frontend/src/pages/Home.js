@@ -7,6 +7,8 @@ const Home = () => {
   const [user, setUser] = useState(null);
   const [loadingStates, setLoadingStates] = useState({});
   const [error, setError] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [promoImages, setPromoImages] = useState([]);
   
   // Calculate dynamic dates
   const currentDate = new Date();
@@ -22,7 +24,20 @@ const Home = () => {
     if (userData) {
       setUser(JSON.parse(userData));
     }
+    
+    // Fetch promotional images
+    fetchPromoImages();
   }, []);
+
+  const fetchPromoImages = async () => {
+    try {
+      const response = await api.get('/admin/public-images');
+      setPromoImages(response.data.images || []);
+    } catch (err) {
+      console.error('Error fetching promotional images:', err);
+      setPromoImages([]);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -30,20 +45,23 @@ const Home = () => {
     navigate('/login');
   };
 
-  const handleDownload = async (imageType) => {
-    setLoadingStates(prev => ({ ...prev, [imageType]: true }));
+  const handleDownload = async (imageId, language) => {
+    const downloadKey = `${imageId}-${language}`;
+    setLoadingStates(prev => ({ ...prev, [downloadKey]: true }));
     setError('');
 
     try {
-      // Generate personalized image with specific type
-      const response = await api.post('/images/generate', { imageType });
+      // Generate personalized image with specific image ID and language
+      const response = await api.post('/images/generate', { 
+        imageId: imageId,
+        language: language
+      });
       
       if (response.data.imageUrl) {
-        
         // Create download link
         const link = document.createElement('a');
         link.href = `http://localhost:5000${response.data.imageUrl}`;
-        link.download = `promotional-${imageType}-${user.displayName}.png`;
+        link.download = `promotional-${language}-${user.displayName}.png`;
         link.target = '_blank';
         document.body.appendChild(link);
         link.click();
@@ -52,22 +70,21 @@ const Home = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to generate personalized image');
     } finally {
-      setLoadingStates(prev => ({ ...prev, [imageType]: false }));
+      setLoadingStates(prev => ({ ...prev, [downloadKey]: false }));
     }
   };
 
-  const handleShare = async (type) => {
-    // First generate the image, then share
-    setLoadingStates(prev => ({ ...prev, [`share-${type}`]: true }));
+  const handleShare = async (imageId) => {
+    const shareKey = `share-${imageId}`;
+    setLoadingStates(prev => ({ ...prev, [shareKey]: true }));
     setError('');
 
     try {
-      let imageType;
-      if (type === 'day1') imageType = 'english-day1';
-      else if (type === 'day2') imageType = 'english-day2';
-      else imageType = 'english-both';
-
-      const response = await api.post('/images/generate', { imageType });
+      // Generate personalized image for sharing
+      const response = await api.post('/images/generate', { 
+        imageId: imageId,
+        language: 'english' // Default to English for sharing
+      });
       
       if (response.data.imageUrl) {
         const shareUrl = `http://localhost:5000${response.data.imageUrl}`;
@@ -75,8 +92,8 @@ const Home = () => {
         if (navigator.share) {
           try {
             await navigator.share({
-              title: 'Property Expo 2025 - Promotional Image',
-              text: `Check out my personalized promotional image for Property Expo ${displayYear}!`,
+              title: 'Promotional Image',
+              text: `Check out my personalized promotional image!`,
               url: shareUrl,
             });
           } catch (err) {
@@ -96,7 +113,7 @@ const Home = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to generate image for sharing');
     } finally {
-      setLoadingStates(prev => ({ ...prev, [`share-${type}`]: false }));
+      setLoadingStates(prev => ({ ...prev, [shareKey]: false }));
     }
   };
 
@@ -105,16 +122,65 @@ const Home = () => {
   }
 
   return (
-    <div className="home-container">
-      <div className="home-header">
-        <h1 className="welcome-message">Welcome, {user.displayName}!</h1>
-        <div className="header-actions">
-          <Link to="/profile" className="profile-link">View Profile</Link>
-          <button onClick={handleLogout} className="logout-button">
-            Logout
+    <div className="modern-app">
+      {/* Modern Navigation Bar */}
+      <nav className="modern-navbar">
+        <div className="navbar-container">
+          <div className="navbar-brand">
+            🎯 Promotion Hub
+          </div>
+          
+          {/* Mobile Menu Button */}
+          <button 
+            className="mobile-menu-btn"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            <span className={`hamburger ${mobileMenuOpen ? 'active' : ''}`}>
+              <span></span>
+              <span></span>
+              <span></span>
+            </span>
           </button>
+
+          {/* Desktop Navigation */}
+          <div className="navbar-nav desktop-nav">
+            <Link to="/profile" className="nav-link">
+              👤 Profile
+            </Link>
+            <button onClick={handleLogout} className="nav-button">
+              🚪 Logout
+            </button>
+          </div>
+
+          {/* Mobile Navigation */}
+          <div className={`mobile-nav ${mobileMenuOpen ? 'active' : ''}`}>
+            <Link 
+              to="/profile" 
+              className="nav-link"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              👤 Profile
+            </Link>
+            <button 
+              onClick={() => {
+                handleLogout();
+                setMobileMenuOpen(false);
+              }} 
+              className="nav-button"
+            >
+              🚪 Logout
+            </button>
+          </div>
         </div>
-      </div>
+      </nav>
+
+      <div className="home-container">
+        <div className="welcome-card">
+          <div className="welcome-content">
+            <h1 className="welcome-title">Welcome back, {user.displayName}! 👋</h1>
+            <p className="welcome-subtitle">Download your personalized promotional images</p>
+          </div>
+        </div>
 
       {error && <div className="error-message">{error}</div>}
 
@@ -136,110 +202,63 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Row 1 */}
-        <div className="table-row">
-          <div className="table-cell">
-            27th Sept {displayYear}
+        {/* Dynamic Promotional Images */}
+        {promoImages.length === 0 ? (
+          <div className="table-row">
+            <div className="table-cell" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem' }}>
+              <p style={{ color: '#666', fontStyle: 'italic' }}>
+                No promotional images available yet. Please check back later.
+              </p>
+            </div>
           </div>
-          <div className="table-cell">
-            <button
-              onClick={() => handleDownload('english-day1')}
-              disabled={loadingStates['english-day1']}
-              className="download-button"
-            >
-              {loadingStates['english-day1'] ? 'Generating...' : 'Download'}
-            </button>
-          </div>
-          <div className="table-cell">
-            <button
-              onClick={() => handleDownload('hindi-day1')}
-              disabled={loadingStates['hindi-day1']}
-              className="download-button"
-            >
-              {loadingStates['hindi-day1'] ? 'तैयार कर रहे हैं...' : 'डाउनलोड'}
-            </button>
-          </div>
-          <div className="table-cell">
-            <button
-              onClick={() => handleShare('day1')}
-              disabled={loadingStates['share-day1']}
-              className="share-button"
-            >
-              {loadingStates['share-day1'] ? 'Sharing...' : 'Share'}
-            </button>
-          </div>
-        </div>
-
-        {/* Row 2 */}
-        <div className="table-row">
-          <div className="table-cell">
-            28th Sept {displayYear}
-          </div>
-          <div className="table-cell">
-            <button
-              onClick={() => handleDownload('english-day2')}
-              disabled={loadingStates['english-day2']}
-              className="download-button"
-            >
-              {loadingStates['english-day2'] ? 'Generating...' : 'Download'}
-            </button>
-          </div>
-          <div className="table-cell">
-            <button
-              onClick={() => handleDownload('hindi-day2')}
-              disabled={loadingStates['hindi-day2']}
-              className="download-button"
-            >
-              {loadingStates['hindi-day2'] ? 'तैयार कर रहे हैं...' : 'डाउनलोड'}
-            </button>
-          </div>
-          <div className="table-cell">
-            <button
-              onClick={() => handleShare('day2')}
-              disabled={loadingStates['share-day2']}
-              className="share-button"
-            >
-              {loadingStates['share-day2'] ? 'Sharing...' : 'Share'}
-            </button>
-          </div>
-        </div>
-
-        {/* Row 3 */}
-        <div className="table-row">
-          <div className="table-cell">
-            Both Days
-          </div>
-          <div className="table-cell">
-            <button
-              onClick={() => handleDownload('english-both')}
-              disabled={loadingStates['english-both']}
-              className="download-button"
-            >
-              {loadingStates['english-both'] ? 'Generating...' : 'Download'}
-            </button>
-          </div>
-          <div className="table-cell">
-            <button
-              onClick={() => handleDownload('hindi-both')}
-              disabled={loadingStates['hindi-both']}
-              className="download-button"
-            >
-              {loadingStates['hindi-both'] ? 'तैयार कर रहे हैं...' : 'डाउनलोड'}
-            </button>
-          </div>
-          <div className="table-cell">
-            <button
-              onClick={() => handleShare('both')}
-              disabled={loadingStates['share-both']}
-              className="share-button"
-            >
-              {loadingStates['share-both'] ? 'Sharing...' : 'Share'}
-            </button>
-          </div>
-        </div>
+        ) : (
+          promoImages.map((image, index) => (
+            <div key={image.id || index} className="table-row">
+              <div className="table-cell">
+                <div style={{ fontWeight: '600', fontSize: '0.9rem' }}>
+                  {new Date(image.eventDate).toLocaleDateString('en-US', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                  })}
+                </div>
+                <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>
+                  {image.title}
+                </div>
+              </div>
+              <div className="table-cell">
+                <button
+                  onClick={() => handleDownload(image.id, 'english')}
+                  disabled={loadingStates[`${image.id}-english`]}
+                  className="download-button"
+                >
+                  {loadingStates[`${image.id}-english`] ? 'Generating...' : 'Download'}
+                </button>
+              </div>
+              <div className="table-cell">
+                <button
+                  onClick={() => handleDownload(image.id, 'hindi')}
+                  disabled={loadingStates[`${image.id}-hindi`]}
+                  className="download-button"
+                >
+                  {loadingStates[`${image.id}-hindi`] ? 'तैयार कर रहे हैं...' : 'डाउनलोड'}
+                </button>
+              </div>
+              <div className="table-cell">
+                <button
+                  onClick={() => handleShare(image.id)}
+                  disabled={loadingStates[`share-${image.id}`]}
+                  className="share-button"
+                >
+                  {loadingStates[`share-${image.id}`] ? 'Sharing...' : 'Share'}
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
-
+    </div>
     </div>
   );
 };
