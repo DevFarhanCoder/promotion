@@ -45,8 +45,8 @@ router.post('/generate', auth, async (req, res) => {
     const fontLargeBlack = await Jimp.loadFont(Jimp.FONT_SANS_64_BLACK);
     const fontMediumBlack = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
     
-    // Calculate bottom area for user details (last 120 pixels for more space)
-    const bottomAreaHeight = 120;
+    // Calculate bottom area for user details (increased to 150 pixels for more space)
+    const bottomAreaHeight = 150;
     const bottomAreaY = imageHeight - bottomAreaHeight;
     
     // Create semi-transparent white background for user credentials at bottom
@@ -63,12 +63,12 @@ router.post('/generate', auth, async (req, res) => {
         if (fs.existsSync(profilePath)) {
           const profileImg = await Jimp.read(profilePath);
           
-          // Resize and make circular - larger profile image
-          profileImg.resize(80, 80).circle();
+          // Resize and make circular - increased profile image size
+          profileImg.resize(100, 100).circle();
           
           // Composite profile image - centered vertically in the bottom area
-          baseImage.composite(profileImg, profileImageX, bottomAreaY + 20);
-          textStartX = profileImageX + 100;
+          baseImage.composite(profileImg, profileImageX, bottomAreaY + 25);
+          textStartX = profileImageX + 120;
         }
       } catch (error) {
         console.error('Error loading profile image:', error);
@@ -79,26 +79,28 @@ router.post('/generate', auth, async (req, res) => {
     if (user.profilePhoto && textStartX > 20) {
       // With profile photo - center text horizontally but place next to photo
       const textAreaWidth = imageWidth - textStartX - 20;
-      baseImage.print(fontLargeBlack, textStartX, bottomAreaY + 20, {
+      baseImage.print(fontLargeBlack, textStartX, bottomAreaY + 30, {
         text: user.displayName,
         alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
         alignmentY: Jimp.VERTICAL_ALIGN_TOP
       }, textAreaWidth, 50);
       
-      baseImage.print(fontMediumBlack, textStartX, bottomAreaY + 75, {
+      // Add more space between name and phone number
+      baseImage.print(fontMediumBlack, textStartX, bottomAreaY + 90, {
         text: user.mobile,
         alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
         alignmentY: Jimp.VERTICAL_ALIGN_TOP
       }, textAreaWidth, 40);
     } else {
       // Without profile photo - center the text completely
-      baseImage.print(fontLargeBlack, 0, bottomAreaY + 20, {
+      baseImage.print(fontLargeBlack, 0, bottomAreaY + 30, {
         text: user.displayName,
         alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
         alignmentY: Jimp.VERTICAL_ALIGN_TOP
       }, imageWidth, 50);
       
-      baseImage.print(fontMediumBlack, 0, bottomAreaY + 75, {
+      // Add more space between name and phone number
+      baseImage.print(fontMediumBlack, 0, bottomAreaY + 90, {
         text: user.mobile,
         alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
         alignmentY: Jimp.VERTICAL_ALIGN_TOP
