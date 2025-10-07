@@ -101,25 +101,20 @@ router.post('/login', async (req, res) => {
 // @access  Private (Admin only)
 router.post('/upload-promo-image', adminAuth, upload.single('promoImage'), async (req, res) => {
   try {
-    const { type } = req.body; // e.g., 'english-day1', 'hindi-day2'
+    const { title, description } = req.body;
     
     if (!req.file) {
       return res.status(400).json({ message: 'Please upload an image file' });
     }
 
-    if (!type) {
-      return res.status(400).json({ message: 'Image type is required' });
-    }
-
-    // Deactivate previous image of same type
-    await PromoImage.updateMany({ type }, { isActive: false });
-
-    // Create new promo image record
+    // Create new promo image record with automatic date
     const promoImage = new PromoImage({
       filename: req.file.filename,
       originalName: req.file.originalname,
-      type: type,
-      isActive: true
+      title: title || 'Promotional Event',
+      description: description || '',
+      isActive: true,
+      eventDate: new Date() // Automatically set to current date
     });
 
     await promoImage.save();
@@ -130,7 +125,9 @@ router.post('/upload-promo-image', adminAuth, upload.single('promoImage'), async
         id: promoImage._id,
         filename: promoImage.filename,
         originalName: promoImage.originalName,
-        type: promoImage.type,
+        title: promoImage.title,
+        description: promoImage.description,
+        eventDate: promoImage.eventDate,
         imageUrl: `/uploads/${promoImage.filename}`
       }
     });
@@ -146,14 +143,16 @@ router.post('/upload-promo-image', adminAuth, upload.single('promoImage'), async
 // @access  Private (Admin only)
 router.get('/promo-images', adminAuth, async (req, res) => {
   try {
-    const promoImages = await PromoImage.find().sort({ createdAt: -1 });
+    const promoImages = await PromoImage.find().sort({ eventDate: -1 });
     
     const imagesWithUrl = promoImages.map(img => ({
       id: img._id,
       filename: img.filename,
       originalName: img.originalName,
-      type: img.type,
+      title: img.title,
+      description: img.description,
       isActive: img.isActive,
+      eventDate: img.eventDate,
       createdAt: img.createdAt,
       imageUrl: `/uploads/${img.filename}`
     }));
@@ -228,6 +227,33 @@ router.delete('/promo-image/:id', adminAuth, async (req, res) => {
   } catch (error) {
     console.error('Delete promo image error:', error);
     res.status(500).json({ message: 'Error deleting promotional image' });
+  }
+});
+
+// @route   GET /api/admin/public-images
+// @desc    Get promotional images for public users (no auth required)
+// @access  Public
+router.get('/public-images', async (req, res) => {
+  try {
+    const promoImages = await PromoImage.find({ isActive: true }).sort({ eventDate: -1 });
+    
+    const imagesWithUrl = promoImages.map(img => ({
+      id: img._id,
+      filename: img.filename,
+      title: img.title,
+      description: img.description,
+      eventDate: img.eventDate,
+      imageUrl: `/uploads/${img.filename}`
+    }));
+
+    res.json({
+      message: 'Promotional images retrieved successfully',
+      images: imagesWithUrl
+    });
+
+  } catch (error) {
+    console.error('Get public images error:', error);
+    res.status(500).json({ message: 'Error retrieving promotional images' });
   }
 });
 

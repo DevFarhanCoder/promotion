@@ -9,14 +9,22 @@ const promoImageSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  type: {
+  title: {
     type: String,
-    enum: ['english-day1', 'english-day2', 'english-both', 'hindi-day1', 'hindi-day2', 'hindi-both'],
-    required: true
+    required: true,
+    default: 'Promotional Event'
+  },
+  description: {
+    type: String,
+    default: ''
   },
   isActive: {
     type: Boolean,
     default: true
+  },
+  eventDate: {
+    type: Date,
+    default: Date.now
   }
 }, {
   timestamps: true

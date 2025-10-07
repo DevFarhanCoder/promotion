@@ -8,22 +8,19 @@ const PromoImage = require('../models/PromoImage');
 const router = express.Router();
 
 // @route   POST /api/images/generate
-// @desc    Generate personalized promotional image using admin uploaded base image
+// @desc    Generate personalized promotional image
 // @access  Private
 router.post('/generate', auth, async (req, res) => {
   try {
     const user = req.user;
-    const { imageType } = req.body; // e.g., 'english-day1', 'hindi-day2', etc.
+    const { imageId, language } = req.body;
     
-    // Find the base promotional image for the requested type
-    const promoImage = await PromoImage.findOne({ 
-      type: imageType, 
-      isActive: true 
-    });
+    // Find the promotional image by ID
+    const promoImage = await PromoImage.findById(imageId);
     
-    if (!promoImage) {
+    if (!promoImage || !promoImage.isActive) {
       return res.status(404).json({ 
-        message: 'Base promotional image not found for this type' 
+        message: 'Promotional image not found or not active' 
       });
     }
     
@@ -38,111 +35,113 @@ router.post('/generate', auth, async (req, res) => {
     
     // Load the base image
     const baseImage = await Jimp.read(baseImagePath);
-    const imageWidth = baseImage.getWidth();
-    const imageHeight = baseImage.getHeight();
+    const originalWidth = baseImage.getWidth();
+    const originalHeight = baseImage.getHeight();
     
-    // Load fonts - using available Jimp fonts (only these are available)
+    // Load fonts
     const fontLargeBlack = await Jimp.loadFont(Jimp.FONT_SANS_64_BLACK);
     const fontMediumBlack = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
     
-    // Calculate bottom area for user details (increased to 150 pixels for more space)
-    const bottomAreaHeight = 150;
-    const bottomAreaY = imageHeight - bottomAreaHeight;
+    // Create extended image with extra space at bottom
+    const bottomAreaHeight = 200; // Increased height for better spacing
+    const extendedHeight = originalHeight + bottomAreaHeight;
+    const extendedImage = new Jimp(originalWidth, extendedHeight, 0xFFFFFF);
     
-    // Create semi-transparent white background for user credentials at bottom
-    const credentialsRect = new Jimp(imageWidth, bottomAreaHeight, 0xFFFFFFCC);
-    baseImage.composite(credentialsRect, 0, bottomAreaY);
+    // Copy original image to the top
+    extendedImage.composite(baseImage, 0, 0);
     
-    let textStartX = 20;
-    let profileImageX = 20;
+    // Create gradient-like background for user details (light gray with slight transparency)
+    const credentialsRect = new Jimp(originalWidth, bottomAreaHeight, 0xF0F2F5FF);
+    extendedImage.composite(credentialsRect, 0, originalHeight);
     
-    // If user has profile photo, load and add it
+    // Add a subtle border line between image and user details
+    const borderLine = new Jimp(originalWidth, 3, 0xDEE2E6FF);
+    extendedImage.composite(borderLine, 0, originalHeight);
+    
+    let textStartX = 40;
+    let profileImageX = 40;
+    const bottomAreaStartY = originalHeight + 25; // More padding from top
+    
+    // Handle profile photo if exists
     if (user.profilePhoto) {
       try {
         const profilePath = path.join(__dirname, '../uploads', user.profilePhoto);
         if (fs.existsSync(profilePath)) {
           const profileImg = await Jimp.read(profilePath);
+          // Resize profile image - much bigger size
+          profileImg.resize(140, 140).circle();
           
-          // Resize and make circular - increased profile image size
-          profileImg.resize(100, 100).circle();
+          // Position profile image on left side, vertically centered in bottom area
+          const profileX = 40;
+          const profileY = originalHeight + (bottomAreaHeight - 140) / 2;
+          extendedImage.composite(profileImg, profileX, profileY);
           
-          // Composite profile image - centered vertically in the bottom area
-          baseImage.composite(profileImg, profileImageX, bottomAreaY + 25);
-          textStartX = profileImageX + 120;
+          // Set text area to the right of profile image with more gap
+          textStartX = profileX + 140 + 40; // 40px gap after profile image
+          profileImageX = profileX;
         }
       } catch (error) {
         console.error('Error loading profile image:', error);
       }
     }
 
-    // Add user details text with larger fonts and better positioning
-    if (user.profilePhoto && textStartX > 20) {
-      // With profile photo - center text horizontally but place next to photo
-      const textAreaWidth = imageWidth - textStartX - 20;
-      baseImage.print(fontLargeBlack, textStartX, bottomAreaY + 30, {
+    // Add user details text with better centering and spacing
+    const rightPadding = 40;
+    
+    if (user.profilePhoto && profileImageX !== undefined) {
+      // With profile photo - center text in remaining area to the right
+      const textWidth = originalWidth - textStartX - rightPadding;
+      const textCenterY = originalHeight + (bottomAreaHeight / 2) - 50; // Center vertically with more space
+      
+      extendedImage.print(fontLargeBlack, textStartX, textCenterY, {
         text: user.displayName,
         alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
         alignmentY: Jimp.VERTICAL_ALIGN_TOP
-      }, textAreaWidth, 50);
+      }, textWidth, 60);
       
-      // Add more space between name and phone number
-      baseImage.print(fontMediumBlack, textStartX, bottomAreaY + 90, {
+      // Add more spacing between name and phone number
+      extendedImage.print(fontMediumBlack, textStartX, textCenterY + 80, {
         text: user.mobile,
         alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
         alignmentY: Jimp.VERTICAL_ALIGN_TOP
-      }, textAreaWidth, 40);
+      }, textWidth, 40);
     } else {
-      // Without profile photo - center the text completely
-      baseImage.print(fontLargeBlack, 0, bottomAreaY + 30, {
+      // Without profile photo - perfect center with more spacing
+      const padding = 40;
+      const textWidth = originalWidth - (padding * 2);
+      const nameY = originalHeight + 50;
+      const mobileY = originalHeight + 140; // Increased spacing between name and mobile
+      
+      extendedImage.print(fontLargeBlack, padding, nameY, {
         text: user.displayName,
         alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
         alignmentY: Jimp.VERTICAL_ALIGN_TOP
-      }, imageWidth, 50);
+      }, textWidth, 60);
       
-      // Add more space between name and phone number
-      baseImage.print(fontMediumBlack, 0, bottomAreaY + 90, {
+      extendedImage.print(fontMediumBlack, padding, mobileY, {
         text: user.mobile,
         alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
         alignmentY: Jimp.VERTICAL_ALIGN_TOP
-      }, imageWidth, 40);
+      }, textWidth, 40);
     }
 
-    // Generate unique filename
-    const filename = `personalized-${imageType}-${user._id}-${Date.now()}.png`;
+    // Generate unique filename and save
+    const filename = `personalized-${language}-${imageId}-${user._id}-${Date.now()}.png`;
     const filepath = path.join(__dirname, '../uploads', filename);
     
-    // Save image
-    await baseImage.writeAsync(filepath);
+    await extendedImage.writeAsync(filepath);
 
     res.json({
       message: 'Personalized image generated successfully',
       imageUrl: `/uploads/${filename}`,
       filename: filename,
-      type: imageType
+      language: language,
+      imageId: imageId
     });
 
   } catch (error) {
     console.error('Image generation error:', error);
     res.status(500).json({ message: 'Error generating personalized image' });
-  }
-});
-
-// @route   GET /api/images/download/:filename
-// @desc    Download generated image
-// @access  Private
-router.get('/download/:filename', auth, (req, res) => {
-  try {
-    const filename = req.params.filename;
-    const filepath = path.join(__dirname, '../uploads', filename);
-    
-    if (!fs.existsSync(filepath)) {
-      return res.status(404).json({ message: 'Image not found' });
-    }
-    
-    res.download(filepath, `promotional-image-${Date.now()}.png`);
-  } catch (error) {
-    console.error('Download error:', error);
-    res.status(500).json({ message: 'Error downloading image' });
   }
 });
 

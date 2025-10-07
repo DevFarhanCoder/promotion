@@ -17,13 +17,29 @@ app.use(express.urlencoded({ extended: true }));
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// MongoDB connection
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('MongoDB connected successfully'))
-.catch((err) => console.error('MongoDB connection error:', err));
+// MongoDB connection with better error handling
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 10000, // Keep trying to send operations for 10 seconds
+      socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+    });
+    console.log(`MongoDB connected successfully: ${conn.connection.host}`);
+  } catch (error) {
+    console.error('MongoDB connection error:', error.message);
+    console.log('Please check:');
+    console.log('1. Your internet connection');
+    console.log('2. MongoDB Atlas IP whitelist settings - Add IP: 36.255.89.74');
+    console.log('3. Your MongoDB connection string');
+    console.log('4. Make sure your MongoDB Atlas cluster is running');
+    process.exit(1);
+  }
+};
+
+// Connect to MongoDB
+connectDB();
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
