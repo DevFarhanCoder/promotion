@@ -45,18 +45,14 @@ router.post('/generate', auth, async (req, res) => {
     // Create extended image with extra space at bottom
     const bottomAreaHeight = 180; // Increased height for better display
     const extendedHeight = originalHeight + bottomAreaHeight;
-    const extendedImage = new Jimp(originalWidth, extendedHeight, 0xFFFFFF);
+    const extendedImage = new Jimp(originalWidth, extendedHeight, 0xd17a22FF); // Golden/orange background
     
     // Copy original image to the top
     extendedImage.composite(baseImage, 0, 0);
     
-    // Create gradient-like background for user details (light gray with slight transparency)
-    const credentialsRect = new Jimp(originalWidth, bottomAreaHeight, 0xF0F2F5FF);
+    // Create background for user details with golden/orange color
+    const credentialsRect = new Jimp(originalWidth, bottomAreaHeight, 0xd17a22FF);
     extendedImage.composite(credentialsRect, 0, originalHeight);
-    
-    // Add a subtle border line between image and user details
-    const borderLine = new Jimp(originalWidth, 3, 0xDEE2E6FF);
-    extendedImage.composite(borderLine, 0, originalHeight);
     
     let textStartX = 40;
     let profileImageX = 40;
@@ -68,16 +64,17 @@ router.post('/generate', auth, async (req, res) => {
         const profilePath = path.join(__dirname, '../uploads', user.profilePhoto);
         if (fs.existsSync(profilePath)) {
           const profileImg = await Jimp.read(profilePath);
-          // Resize profile image - proportional to bottom area
-          profileImg.resize(120, 120).circle();
+          // Resize profile image - bigger square shape (no circle)
+          const profileSize = 150; // Increased size
+          profileImg.resize(profileSize, profileSize); // Square shape - removed .circle()
           
-          // Position profile image on left side, vertically centered in bottom area
-          const profileX = 30;
-          const profileY = originalHeight + (bottomAreaHeight - 120) / 2;
+          // Position profile image - shifted more to the right
+          const profileX = 60; // Shifted right from 30 to 60
+          const profileY = originalHeight + (bottomAreaHeight - profileSize) / 2;
           extendedImage.composite(profileImg, profileX, profileY);
           
-          // Set text area to the right of profile image with more gap
-          textStartX = profileX + 120 + 30; // 30px gap after profile image
+          // Set text area to the right of profile image with gap
+          textStartX = profileX + profileSize + 40; // 40px gap after profile image
           profileImageX = profileX;
         }
       } catch (error) {
