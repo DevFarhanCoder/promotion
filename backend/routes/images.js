@@ -69,7 +69,7 @@ router.post('/generate', auth, async (req, res) => {
           profileImg.resize(profileSize, profileSize); // Square shape - removed .circle()
           
           // Position profile image - shifted more to the right
-          const profileX = 60; // Shifted right from 30 to 60
+          const profileX = 30; // Shifted right from 30 to 60
           const profileY = originalHeight + (bottomAreaHeight - profileSize) / 2;
           extendedImage.composite(profileImg, profileX, profileY);
           
