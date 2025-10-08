@@ -58,10 +58,15 @@ const Home = () => {
         const filename = response.data.imageUrl.split('/').pop();
         const downloadUrl = `https://promotion-backend.onrender.com/download/${filename}`;
         
+        // Use the upload date for the download filename
+        const downloadFilename = response.data.uploadDate ? 
+          `${response.data.uploadDate}.png` : 
+          `promotional-${language}-${user.displayName}.png`;
+        
         // Create download link
         const link = document.createElement('a');
         link.href = downloadUrl;
-        link.download = `promotional-${language}-${user.displayName}.png`;
+        link.download = downloadFilename;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
