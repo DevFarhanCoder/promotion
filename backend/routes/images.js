@@ -131,12 +131,21 @@ router.post('/generate', auth, async (req, res) => {
     
     await extendedImage.writeAsync(filepath);
 
+    // Format the upload date as DD-MM-YYYY
+    const uploadDate = new Date(promoImage.createdAt);
+    const formattedDate = uploadDate.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }).replace(/\//g, '-');
+
     res.json({
       message: 'Personalized image generated successfully',
       imageUrl: `/uploads/${filename}`,
       filename: filename,
       language: language,
-      imageId: imageId
+      imageId: imageId,
+      uploadDate: formattedDate
     });
 
   } catch (error) {
