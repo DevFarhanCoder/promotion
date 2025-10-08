@@ -38,12 +38,12 @@ router.post('/generate', auth, async (req, res) => {
     const originalWidth = baseImage.getWidth();
     const originalHeight = baseImage.getHeight();
     
-    // Load fonts - smaller sizes for compact display
-    const fontLargeBlack = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
+    // Load fonts - bold fonts for better visibility
+    const fontLargeBlack = await Jimp.loadFont(Jimp.FONT_SANS_64_BLACK);
     const fontMediumBlack = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
     
     // Create extended image with extra space at bottom
-    const bottomAreaHeight = 120; // Reduced height to keep banner compact
+    const bottomAreaHeight = 180; // Increased height for better display
     const extendedHeight = originalHeight + bottomAreaHeight;
     const extendedImage = new Jimp(originalWidth, extendedHeight, 0xFFFFFF);
     
@@ -68,16 +68,16 @@ router.post('/generate', auth, async (req, res) => {
         const profilePath = path.join(__dirname, '../uploads', user.profilePhoto);
         if (fs.existsSync(profilePath)) {
           const profileImg = await Jimp.read(profilePath);
-          // Resize profile image - smaller to match reduced bottom area
-          profileImg.resize(80, 80).circle();
+          // Resize profile image - proportional to bottom area
+          profileImg.resize(120, 120).circle();
           
           // Position profile image on left side, vertically centered in bottom area
-          const profileX = 20;
-          const profileY = originalHeight + (bottomAreaHeight - 80) / 2;
+          const profileX = 30;
+          const profileY = originalHeight + (bottomAreaHeight - 120) / 2;
           extendedImage.composite(profileImg, profileX, profileY);
           
           // Set text area to the right of profile image with more gap
-          textStartX = profileX + 80 + 20; // 20px gap after profile image
+          textStartX = profileX + 120 + 30; // 30px gap after profile image
           profileImageX = profileX;
         }
       } catch (error) {
@@ -86,12 +86,12 @@ router.post('/generate', auth, async (req, res) => {
     }
 
     // Add user details text with better centering and spacing
-    const rightPadding = 20;
+    const rightPadding = 30;
     
     if (user.profilePhoto && profileImageX !== undefined) {
       // With profile photo - center text in remaining area to the right
       const textWidth = originalWidth - textStartX - rightPadding;
-      const textCenterY = originalHeight + 20; // Start from top with padding
+      const textCenterY = originalHeight + 30; // Start from top with padding
       
       extendedImage.print(fontLargeBlack, textStartX, textCenterY, {
         text: user.displayName,
@@ -100,17 +100,17 @@ router.post('/generate', auth, async (req, res) => {
       }, textWidth, 200); // Increased height to accommodate full name
       
       // Add more spacing between name and phone number
-      extendedImage.print(fontMediumBlack, textStartX, textCenterY + 50, {
+      extendedImage.print(fontMediumBlack, textStartX, textCenterY + 70, {
         text: user.mobile,
         alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
         alignmentY: Jimp.VERTICAL_ALIGN_TOP
       }, textWidth, 200); // Increased height for full number
     } else {
       // Without profile photo - perfect center with more spacing
-      const padding = 20;
+      const padding = 30;
       const textWidth = originalWidth - (padding * 2);
-      const nameY = originalHeight + 20;
-      const mobileY = originalHeight + 70; // Reduced spacing between name and mobile
+      const nameY = originalHeight + 30;
+      const mobileY = originalHeight + 100; // Spacing between name and mobile
       
       extendedImage.print(fontLargeBlack, padding, nameY, {
         text: user.displayName,
