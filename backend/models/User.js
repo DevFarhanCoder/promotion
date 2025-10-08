@@ -27,6 +27,19 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Password is required'],
     minlength: [6, 'Password must be at least 6 characters long']
   },
+  introducer: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: [true, 'Introducer is required']
+  },
+  introducerMobile: {
+    type: String,
+    required: [true, 'Introducer mobile number is required']
+  },
+  introducerName: {
+    type: String,
+    required: [true, 'Introducer name is required']
+  },
   profilePhoto: {
     type: String,
     default: null

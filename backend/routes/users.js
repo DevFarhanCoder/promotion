@@ -31,6 +31,31 @@ const upload = multer({
   }
 });
 
+// @route   GET /api/users/search
+// @desc    Search users by mobile number
+// @access  Public
+router.get('/search', async (req, res) => {
+  try {
+    const { mobile } = req.query;
+    
+    if (!mobile) {
+      return res.status(400).json({ message: 'Mobile number is required' });
+    }
+
+    // Search for users whose mobile number contains the query
+    const users = await User.find({
+      mobile: { $regex: mobile, $options: 'i' }
+    })
+    .select('_id name displayName mobile')
+    .limit(10);
+
+    res.json({ users });
+  } catch (error) {
+    console.error('Search users error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // @route   GET /api/users/profile
 // @desc    Get user profile
 // @access  Private

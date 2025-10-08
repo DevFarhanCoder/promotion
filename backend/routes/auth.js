@@ -42,7 +42,18 @@ const generateToken = (userId) => {
 // @access  Public
 router.post('/signup', upload.single('profilePhoto'), async (req, res) => {
   try {
-    const { name, mobile, displayName, password } = req.body;
+    const { name, mobile, displayName, password, introducerId, introducerMobile, introducerName } = req.body;
+
+    // Validate introducer is provided
+    if (!introducerId || !introducerMobile || !introducerName) {
+      return res.status(400).json({ message: 'Introducer is required. Please select a referral member.' });
+    }
+
+    // Verify introducer exists
+    const introducer = await User.findById(introducerId);
+    if (!introducer) {
+      return res.status(400).json({ message: 'Invalid introducer. Please select a valid member.' });
+    }
 
     // Check if user already exists
     const existingUser = await User.findOne({ mobile });
@@ -55,7 +66,10 @@ router.post('/signup', upload.single('profilePhoto'), async (req, res) => {
       name,
       mobile,
       displayName,
-      password
+      password,
+      introducer: introducerId,
+      introducerMobile,
+      introducerName
     };
 
     // Add profile photo if uploaded
@@ -78,7 +92,8 @@ router.post('/signup', upload.single('profilePhoto'), async (req, res) => {
         name: user.name,
         mobile: user.mobile,
         displayName: user.displayName,
-        profilePhoto: user.profilePhoto
+        profilePhoto: user.profilePhoto,
+        introducerName: user.introducerName
       }
     });
 
