@@ -38,9 +38,10 @@ router.post('/generate', auth, async (req, res) => {
     const originalWidth = baseImage.getWidth();
     const originalHeight = baseImage.getHeight();
     
-    // Load fonts
+    // Load fonts - using larger sizes for better visibility
     const fontLargeBlack = await Jimp.loadFont(Jimp.FONT_SANS_64_BLACK);
-    const fontMediumBlack = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
+    const fontMediumBlack = await Jimp.loadFont(Jimp.FONT_SANS_64_BLACK); // Increased phone number font size
+    const fontExtraLargeBlack = await Jimp.loadFont(Jimp.FONT_SANS_128_BLACK); // For name
     
     // Create extended image with extra space at bottom
     const bottomAreaHeight = 200; // Increased height for better spacing
@@ -68,8 +69,8 @@ router.post('/generate', auth, async (req, res) => {
         const profilePath = path.join(__dirname, '../uploads', user.profilePhoto);
         if (fs.existsSync(profilePath)) {
           const profileImg = await Jimp.read(profilePath);
-          // Resize profile image - much bigger size
-          profileImg.resize(140, 140).circle();
+          // Resize profile image - keep it square (no circle)
+          profileImg.resize(140, 140);
           
           // Position profile image on left side, vertically centered in bottom area
           const profileX = 40;
@@ -91,33 +92,36 @@ router.post('/generate', auth, async (req, res) => {
     if (user.profilePhoto && profileImageX !== undefined) {
       // With profile photo - center text in remaining area to the right
       const textWidth = originalWidth - textStartX - rightPadding;
-      const textCenterY = originalHeight + (bottomAreaHeight / 2) - 50; // Center vertically with more space
+      const textCenterY = originalHeight + (bottomAreaHeight / 2) - 60; // Adjust for larger text
       
-      extendedImage.print(fontLargeBlack, textStartX, textCenterY, {
+      // Use extra large font for name
+      extendedImage.print(fontExtraLargeBlack, textStartX, textCenterY, {
         text: user.displayName,
         alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
         alignmentY: Jimp.VERTICAL_ALIGN_TOP
-      }, textWidth, 60);
+      }, textWidth, 80);
       
-      // Add more spacing between name and phone number
-      extendedImage.print(fontMediumBlack, textStartX, textCenterY + 80, {
+      // Use large font for phone number (increased size)
+      extendedImage.print(fontMediumBlack, textStartX, textCenterY + 100, {
         text: user.mobile,
         alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
         alignmentY: Jimp.VERTICAL_ALIGN_TOP
-      }, textWidth, 40);
+      }, textWidth, 60);
     } else {
       // Without profile photo - perfect center with more spacing
       const padding = 40;
       const textWidth = originalWidth - (padding * 2);
-      const nameY = originalHeight + 50;
-      const mobileY = originalHeight + 140; // Increased spacing between name and mobile
+      const nameY = originalHeight + 40;
+      const mobileY = originalHeight + 130; // Adjusted spacing for larger fonts
       
-      extendedImage.print(fontLargeBlack, padding, nameY, {
+      // Use extra large font for name
+      extendedImage.print(fontExtraLargeBlack, padding, nameY, {
         text: user.displayName,
         alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
         alignmentY: Jimp.VERTICAL_ALIGN_TOP
-      }, textWidth, 60);
+      }, textWidth, 80);
       
+      // Use large font for phone number
       extendedImage.print(fontMediumBlack, padding, mobileY, {
         text: user.mobile,
         alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
