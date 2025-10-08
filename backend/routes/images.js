@@ -40,7 +40,7 @@ router.post('/generate', auth, async (req, res) => {
     
     // Load fonts - bold fonts for better visibility
     const fontLargeBlack = await Jimp.loadFont(Jimp.FONT_SANS_64_BLACK);
-    const fontMediumBlack = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
+    const fontMediumBlack = await Jimp.loadFont(Jimp.FONT_SANS_64_BLACK);
     
     // Create extended image with extra space at bottom
     const bottomAreaHeight = 180; // Increased height for better display
