@@ -63,6 +63,26 @@ app.get('/', (req, res) => {
   res.json({ message: 'Promotion App Backend is running!' });
 });
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  try {
+    const healthStatus = {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      environment: process.env.NODE_ENV || 'development'
+    };
+    res.status(200).json(healthStatus);
+  } catch (error) {
+    res.status(500).json({
+      status: 'unhealthy',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Download route for forcing file downloads
 app.get('/download/:filename', (req, res) => {
   const filename = req.params.filename;
