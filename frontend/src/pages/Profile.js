@@ -152,7 +152,7 @@ const Profile = () => {
                 <div className="photo-upload">
                   {user.profilePhoto ? (
                     <img 
-                      src={`http://localhost:5000/uploads/${user.profilePhoto}`}
+                      src={`https://promotion-backend.onrender.com/uploads/${user.profilePhoto}`}
                       alt="Profile"
                       className="profile-photo-preview"
                     />
@@ -235,7 +235,7 @@ const Profile = () => {
               <div className="profile-photo-section">
                 {user.profilePhoto ? (
                   <img 
-                    src={`http://localhost:5000/uploads/${user.profilePhoto}`}
+                    src={`https://promotion-backend.onrender.com/uploads/${user.profilePhoto}`}
                     alt="Profile"
                     className="profile-photo-display"
                   />

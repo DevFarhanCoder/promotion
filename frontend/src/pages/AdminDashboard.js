@@ -200,7 +200,7 @@ const AdminDashboard = () => {
             {promoImages.map(image => (
               <div key={image.id || image._id} className="image-card">
                 <img
-                  src={`http://localhost:5000${image.imageUrl}`}
+                  src={`https://promotion-backend.onrender.com${image.imageUrl}`}
                   alt={image.originalName || 'Promotional Image'}
                   className="preview-image"
                 />

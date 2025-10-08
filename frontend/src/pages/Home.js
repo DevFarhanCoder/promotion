@@ -13,10 +13,6 @@ const Home = () => {
   // Calculate dynamic dates
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear();
-  const eventDate2 = new Date(currentYear, 8, 28); // September 28
-  
-  // If current date is past September, show next year's dates
-  const displayYear = currentDate > eventDate2 ? currentYear + 1 : currentYear;
 
   useEffect(() => {
     // Get user data from localStorage
@@ -60,7 +56,7 @@ const Home = () => {
       if (response.data.imageUrl) {
         // Create download link
         const link = document.createElement('a');
-        link.href = `http://localhost:5000${response.data.imageUrl}`;
+        link.href = `https://promotion-backend.onrender.com${response.data.imageUrl}`;
         link.download = `promotional-${language}-${user.displayName}.png`;
         link.target = '_blank';
         document.body.appendChild(link);
@@ -87,7 +83,7 @@ const Home = () => {
       });
       
       if (response.data.imageUrl) {
-        const shareUrl = `http://localhost:5000${response.data.imageUrl}`;
+        const shareUrl = `https://promotion-backend.onrender.com${response.data.imageUrl}`;
         
         if (navigator.share) {
           try {
@@ -127,7 +123,7 @@ const Home = () => {
       <nav className="modern-navbar">
         <div className="navbar-container">
           <div className="navbar-brand">
-            🎯 Promotion Hub
+            <img src="/promotion-hub.png" alt="Promotion Hub" className="navbar-logo" />
           </div>
           
           {/* Mobile Menu Button */}
