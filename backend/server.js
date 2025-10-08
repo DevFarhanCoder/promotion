@@ -20,8 +20,13 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded files statically
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve uploaded files statically with proper headers
+app.use('/uploads', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  next();
+}, express.static(path.join(__dirname, 'uploads')));
 
 // MongoDB connection with better error handling
 const connectDB = async () => {
@@ -56,6 +61,25 @@ app.use('/api/admin', require('./routes/admin'));
 // Basic route
 app.get('/', (req, res) => {
   res.json({ message: 'Promotion App Backend is running!' });
+});
+
+// Download route for forcing file downloads
+app.get('/download/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.join(__dirname, 'uploads', filename);
+  
+  // Check if file exists
+  if (!require('fs').existsSync(filePath)) {
+    return res.status(404).json({ message: 'File not found' });
+  }
+  
+  // Set headers to force download
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Content-Type', 'image/png');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  
+  // Send file
+  res.sendFile(filePath);
 });
 
 // Error handling middleware
