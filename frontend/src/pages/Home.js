@@ -54,11 +54,14 @@ const Home = () => {
       });
       
       if (response.data.imageUrl) {
+        // Use the download endpoint for forced download
+        const filename = response.data.imageUrl.split('/').pop();
+        const downloadUrl = `https://promotion-backend.onrender.com/download/${filename}`;
+        
         // Create download link
         const link = document.createElement('a');
-        link.href = `https://promotion-backend.onrender.com${response.data.imageUrl}`;
+        link.href = downloadUrl;
         link.download = `promotional-${language}-${user.displayName}.png`;
-        link.target = '_blank';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
