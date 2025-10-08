@@ -39,8 +39,8 @@ router.post('/generate', auth, async (req, res) => {
     const originalHeight = baseImage.getHeight();
     
     // Load fonts - smaller sizes for compact display
-    const fontLargeBlack = await Jimp.loadFont(Jimp.FONT_SANS_16_BLACK);
-    const fontMediumBlack = await Jimp.loadFont(Jimp.FONT_SANS_16_BLACK);
+    const fontLargeBlack = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
+    const fontMediumBlack = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
     
     // Create extended image with extra space at bottom
     const bottomAreaHeight = 120; // Reduced height to keep banner compact
