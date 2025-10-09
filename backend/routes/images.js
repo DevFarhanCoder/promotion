@@ -128,10 +128,14 @@ router.post('/generate', auth, async (req, res) => {
     
     await extendedImage.writeAsync(filepath);
 
+    // Create a user-friendly filename for download
+    const userFriendlyFilename = `${user.displayName}-${language}-promotional.png`;
+    
     res.json({
       message: 'Personalized image generated successfully',
       imageUrl: `/uploads/${filename}`,
       filename: filename,
+      userFriendlyFilename: userFriendlyFilename,
       language: language,
       imageId: imageId
     });
