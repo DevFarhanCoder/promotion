@@ -515,4 +515,679 @@ router.get('/users/stats', adminAuth, async (req, res) => {
   }
 });
 
+// @route   GET /api/admin/referral-network
+// @desc    Get 6-level hierarchical referral network with independent branch logic
+// @access  Private (Admin only)
+router.get('/referral-network', adminAuth, async (req, res) => {
+  try {
+    const { rootUserId } = req.query; // Add support for filtering by specific root user
+    
+    // Helper function to calculate branch levels for a specific user's referral chain
+    const calculateBranchLevels = async (userId) => {
+      const levels = {
+        level2: 0, level3: 0, level4: 0, level5: 0, level6: 0, total: 0
+      };
+      
+      // Level 2: Direct referrals of this user
+      const level2Users = await User.find({ introducer: userId }).select('_id');
+      levels.level2 = level2Users.length;
+      
+      if (level2Users.length > 0) {
+        // Level 3: Referrals of Level 2 users
+        const level2Ids = level2Users.map(u => u._id);
+        const level3Users = await User.find({ introducer: { $in: level2Ids } }).select('_id');
+        levels.level3 = level3Users.length;
+        
+        if (level3Users.length > 0) {
+          // Level 4: Referrals of Level 3 users
+          const level3Ids = level3Users.map(u => u._id);
+          const level4Users = await User.find({ introducer: { $in: level3Ids } }).select('_id');
+          levels.level4 = level4Users.length;
+          
+          if (level4Users.length > 0) {
+            // Level 5: Referrals of Level 4 users
+            const level4Ids = level4Users.map(u => u._id);
+            const level5Users = await User.find({ introducer: { $in: level4Ids } }).select('_id');
+            levels.level5 = level5Users.length;
+            
+            if (level5Users.length > 0) {
+              // Level 6: Referrals of Level 5 users
+              const level5Ids = level5Users.map(u => u._id);
+              const level6Users = await User.find({ introducer: { $in: level5Ids } }).select('_id');
+              levels.level6 = level6Users.length;
+            }
+          }
+        }
+      }
+      
+      levels.total = levels.level2 + levels.level3 + levels.level4 + levels.level5 + levels.level6;
+      return levels;
+    };
+
+    let rootUsers;
+    
+    if (rootUserId) {
+      // If specific root user is requested, get only that user
+      rootUsers = await User.find({ _id: rootUserId }).select('name displayName mobile createdAt');
+      console.log(`Filtering for specific root user: ${rootUserId}`);
+    } else {
+      // Find users who have referrals (potential root users)
+      const usersWithReferrals = await User.find({
+        _id: { $in: await User.distinct('introducer') }
+      }).select('name displayName mobile createdAt');
+      
+      // If no users with referrals, just get all users
+      rootUsers = usersWithReferrals.length > 0 ? usersWithReferrals : 
+        await User.find({}).select('name displayName mobile createdAt').limit(10);
+    }
+    
+    console.log('Found root users:', rootUsers.length);
+    
+    const networkData = [];
+    
+    for (const rootUser of rootUsers) {
+      // Get direct referrals (Level 1 users) - using ObjectId reference
+      // Get direct referrals (Level 1 users)
+      const level1Users = await User.find({ 
+        introducer: rootUser._id 
+      }).select('name displayName mobile createdAt');
+      
+      console.log(`Root user ${rootUser.name} has ${level1Users.length} direct referrals`);
+      
+      // Create the root user entry with their branches
+      const rootEntry = {
+        id: rootUser._id,
+        name: rootUser.name,
+        displayName: rootUser.displayName,
+        mobile: rootUser.mobile,
+        joinDate: rootUser.createdAt,
+        isRoot: true,
+        branches: []
+      };
+      
+      // Add root user as first branch with their total network counts
+      const rootBranchData = await calculateBranchLevels(rootUser._id);
+      rootEntry.branches.push({
+        id: rootUser._id,
+        name: rootUser.name,
+        displayName: rootUser.displayName,
+        mobile: rootUser.mobile,
+        joinDate: rootUser.createdAt,
+        isRoot: true,
+        level2: rootBranchData.level2,
+        level3: rootBranchData.level3,
+        level4: rootBranchData.level4,
+        level5: rootBranchData.level5,
+        level6: rootBranchData.level6,
+        totalUsers: rootBranchData.total
+      });
+      
+      // Calculate branch data for each Level 1 user (direct referrals)
+      for (const level1User of level1Users) {
+        const branchData = await calculateBranchLevels(level1User._id);
+        
+        rootEntry.branches.push({
+          id: level1User._id,
+          name: level1User.name,
+          displayName: level1User.displayName,
+          mobile: level1User.mobile,
+          joinDate: level1User.createdAt,
+          isRoot: false,
+          level2: branchData.level2,
+          level3: branchData.level3,
+          level4: branchData.level4,
+          level5: branchData.level5,
+          level6: branchData.level6,
+          totalUsers: branchData.total
+        });
+      }
+      
+      networkData.push(rootEntry);
+    }
+
+    // Calculate grand totals across all branches
+    const grandTotals = {
+      level1: 0, level2: 0, level3: 0, level4: 0, level5: 0, level6: 0, total: 0
+    };
+
+    networkData.forEach(rootData => {
+      rootData.branches.forEach(branch => {
+        if (branch.isRoot) {
+          grandTotals.level2 += branch.level2;
+        }
+        grandTotals.level2 += branch.level2;
+        grandTotals.level3 += branch.level3;
+        grandTotals.level4 += branch.level4;
+        grandTotals.level5 += branch.level5;
+        grandTotals.level6 += branch.level6;
+        grandTotals.total += branch.totalUsers;
+      });
+      grandTotals.level1 += rootData.branches.length - 1; // Subtract 1 for root user
+    });
+
+    res.json({
+      success: true,
+      message: '6-level hierarchical network retrieved successfully',
+      data: networkData,
+      grandTotals,
+      totalRootUsers: networkData.length
+    });
+
+  } catch (error) {
+    console.error('Get hierarchical network error:', error);
+    res.status(500).json({ message: 'Error retrieving hierarchical network' });
+  }
+});
+
+// @route   GET /api/admin/level-users/:branchUserId/:level
+// @desc    Get detailed user list for a specific level under a branch user
+// @access  Private (Admin only)
+router.get('/level-users/:branchUserId/:level', adminAuth, async (req, res) => {
+  try {
+    const { branchUserId, level } = req.params;
+    const targetLevel = parseInt(level);
+
+    if (targetLevel < 2 || targetLevel > 6) {
+      return res.status(400).json({ message: 'Level must be between 2 and 6' });
+    }
+
+    // Get branch user info
+    const branchUser = await User.findById(branchUserId).select('name displayName mobile');
+    if (!branchUser) {
+      return res.status(404).json({ message: 'Branch user not found' });
+    }
+
+    // Helper function to get users at specific level from the branch user
+    const getUsersForLevel = async (startUserId, targetLevel) => {
+      let currentLevelIds = [startUserId];
+      
+      // Navigate down to the target level
+      for (let currentLevel = 2; currentLevel <= targetLevel; currentLevel++) {
+        if (currentLevelIds.length === 0) break;
+        
+        const nextLevelUsers = await User.find({ 
+          introducer: { $in: currentLevelIds } 
+        }).select('name displayName mobile createdAt introducer introducerName introducerMobile');
+        
+        if (currentLevel === targetLevel) {
+          // This is our target level, return these users with introducer info
+          const usersWithIntroducerInfo = nextLevelUsers.map(user => ({
+            _id: user._id,
+            name: user.name,
+            displayName: user.displayName,
+            mobile: user.mobile,
+            createdAt: user.createdAt,
+            introducerName: user.introducerName || 'Unknown',
+            introducerDisplayName: user.introducerDisplayName || 'Unknown',
+            introducerMobile: user.introducerMobile || 'Unknown'
+          }));
+          
+          return usersWithIntroducerInfo;
+        }
+        
+        // Move to next level
+        currentLevelIds = nextLevelUsers.map(u => u._id);
+      }
+      
+      return [];
+    };
+
+    // Get users at the specified level
+    const levelUsers = await getUsersForLevel(branchUserId, targetLevel);
+
+    // Sort by join date (newest first)
+    levelUsers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    res.json({
+      success: true,
+      message: `Level ${targetLevel} users retrieved successfully`,
+      branchUser: {
+        id: branchUserId,
+        name: branchUser.name,
+        displayName: branchUser.displayName,
+        mobile: branchUser.mobile
+      },
+      level: targetLevel,
+      users: levelUsers,
+      totalUsers: levelUsers.length
+    });
+
+  } catch (error) {
+    console.error('Get level users error:', error);
+    res.status(500).json({ message: 'Error retrieving level users' });
+  }
+});
+
+// @route   GET /api/admin/referral-chain/:userId
+// @desc    Get complete referral chain flow for a specific user
+// @access  Private (Admin only)
+router.get('/referral-chain/:userId', adminAuth, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Get the root user
+    const rootUser = await User.findById(userId).select('-password');
+    if (!rootUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Helper function to build referral tree
+    const buildReferralTree = async (userId, level = 1, maxLevel = 5) => {
+      if (level > maxLevel) return [];
+
+      const directReferrals = await User.find({ introducer: userId })
+        .select('_id name displayName mobile createdAt')
+        .sort({ createdAt: -1 });
+
+      const referralTree = [];
+
+      for (const referral of directReferrals) {
+        const childReferrals = await buildReferralTree(referral._id, level + 1, maxLevel);
+        
+        referralTree.push({
+          id: referral._id,
+          name: referral.name,
+          displayName: referral.displayName,
+          mobile: referral.mobile,
+          joinDate: referral.createdAt,
+          level: level,
+          children: childReferrals,
+          childrenCount: childReferrals.length
+        });
+      }
+
+      return referralTree;
+    };
+
+    // Build the complete referral tree
+    const referralTree = await buildReferralTree(userId);
+
+    // Calculate level-wise counts
+    const calculateLevelCounts = (tree, counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }) => {
+      tree.forEach(node => {
+        if (counts[node.level] !== undefined) {
+          counts[node.level]++;
+        }
+        if (node.children && node.children.length > 0) {
+          calculateLevelCounts(node.children, counts);
+        }
+      });
+      return counts;
+    };
+
+    const levelCounts = calculateLevelCounts(referralTree);
+    const totalReferrals = Object.values(levelCounts).reduce((sum, count) => sum + count, 0);
+
+    res.json({
+      message: 'Referral chain retrieved successfully',
+      rootUser: {
+        id: rootUser._id,
+        name: rootUser.name,
+        displayName: rootUser.displayName,
+        mobile: rootUser.mobile,
+        joinDate: rootUser.createdAt
+      },
+      referralTree,
+      levelCounts,
+      totalReferrals
+    });
+
+  } catch (error) {
+    console.error('Get referral chain error:', error);
+    res.status(500).json({ message: 'Error retrieving referral chain' });
+  }
+});
+
+// @route   GET /api/admin/referral-connections
+// @desc    Get referral connections with optional filtering by introducer
+// @access  Private (Admin only)
+router.get('/referral-connections', adminAuth, async (req, res) => {
+  try {
+    const { introducerId, introducerMobile } = req.query;
+    
+    let query = {};
+    let introducerInfo = null;
+    
+    // If filtering by introducer, find the introducer first
+    if (introducerId) {
+      introducerInfo = await User.findById(introducerId).select('name displayName mobile');
+      if (!introducerInfo) {
+        return res.status(404).json({ message: 'Introducer not found' });
+      }
+      query.introducer = introducerId;
+    } else if (introducerMobile) {
+      introducerInfo = await User.findOne({ mobile: introducerMobile }).select('name displayName mobile');
+      if (!introducerInfo) {
+        return res.status(404).json({ message: 'Introducer not found with this mobile number' });
+      }
+      query.introducer = introducerInfo._id;
+    }
+
+    // Get users based on query (all users or filtered by introducer)
+    const users = await User.find(query)
+      .populate('introducer', 'name displayName mobile')
+      .sort({ createdAt: -1 })
+      .select('-password');
+
+    // Calculate referral count for each user
+    const referralConnections = await Promise.all(
+      users.map(async (user) => {
+        const referralCount = await User.countDocuments({ introducer: user._id });
+        
+        return {
+          id: user._id,
+          name: user.name,
+          displayName: user.displayName,
+          mobile: user.mobile,
+          joinDate: user.createdAt,
+          introducerName: user.introducer ? 
+            (user.introducer.displayName || user.introducer.name) : 
+            'N/A',
+          introducerMobile: user.introducer ? user.introducer.mobile : 'N/A',
+          introducerId: user.introducer ? user.introducer._id : null,
+          referralCount,
+          profilePhoto: user.profilePhoto
+        };
+      })
+    );
+
+    // Get some basic stats
+    const totalUsers = users.length;
+    const usersWithReferrals = referralConnections.filter(user => user.referralCount > 0).length;
+    const totalConnections = referralConnections.reduce((sum, user) => sum + user.referralCount, 0);
+
+    res.json({
+      message: introducerInfo ? 
+        `Direct referrals of ${introducerInfo.displayName || introducerInfo.name} retrieved successfully` :
+        'All referral connections retrieved successfully',
+      connections: referralConnections,
+      introducerInfo: introducerInfo ? {
+        id: introducerInfo._id,
+        name: introducerInfo.name,
+        displayName: introducerInfo.displayName,
+        mobile: introducerInfo.mobile
+      } : null,
+      stats: {
+        totalUsers,
+        usersWithReferrals,
+        totalConnections,
+        averageReferralsPerUser: totalUsers > 0 ? (totalConnections / totalUsers).toFixed(2) : 0
+      }
+    });
+
+  } catch (error) {
+    console.error('Get referral connections error:', error);
+    res.status(500).json({ message: 'Error retrieving referral connections' });
+  }
+});
+
+// @route   GET /api/admin/all-users-with-introducers
+// @desc    Get all users with their introducer information (for dropdown/selection)
+// @access  Private (Admin only)
+router.get('/all-users-with-introducers', adminAuth, async (req, res) => {
+  try {
+    // Get all users who have made referrals (potential introducers)
+    const introducers = await User.aggregate([
+      {
+        $group: {
+          _id: '$introducer',
+          referralCount: { $sum: 1 }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'introducerInfo'
+        }
+      },
+      {
+        $unwind: '$introducerInfo'
+      },
+      {
+        $project: {
+          _id: '$introducerInfo._id',
+          name: '$introducerInfo.name',
+          displayName: '$introducerInfo.displayName',
+          mobile: '$introducerInfo.mobile',
+          referralCount: 1
+        }
+      },
+      {
+        $sort: { referralCount: -1 }
+      }
+    ]);
+
+    console.log('Found introducers:', introducers.map(i => `${i.name}/${i.displayName} (${i.mobile}) - ${i.referralCount} referrals`));
+
+    res.json({
+      message: 'Introducers list retrieved successfully',
+      introducers
+    });
+
+  } catch (error) {
+    console.error('Get introducers error:', error);
+    res.status(500).json({ message: 'Error retrieving introducers list' });
+  }
+});
+
+// @route   GET /api/admin/hierarchical-chain/:userId
+// @desc    Get hierarchical referral chain starting from a specific user
+// @access  Private (Admin only)
+router.get('/hierarchical-chain/:userId', adminAuth, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const maxLevels = parseInt(req.query.maxLevels) || 5;
+
+    console.log('Hierarchical chain requested for user ID:', userId);
+
+    // Get the root user
+    const rootUser = await User.findById(userId).select('-password');
+    if (!rootUser) {
+      console.log('User not found with ID:', userId);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    console.log('Found root user:', rootUser.name, rootUser.displayName, rootUser.mobile);
+
+    // Helper function to build hierarchical chain
+    const buildHierarchicalChain = async (parentId, currentLevel = 1) => {
+      if (currentLevel > maxLevels) return [];
+
+      console.log(`Building level ${currentLevel} for parent ID: ${parentId}`);
+
+      const directReferrals = await User.find({ introducer: parentId })
+        .select('_id name displayName mobile createdAt')
+        .sort({ createdAt: -1 });
+
+      console.log(`Found ${directReferrals.length} direct referrals at level ${currentLevel}:`, 
+        directReferrals.map(u => `${u.name} (@${u.displayName}) - ${u.mobile}`));
+
+      const levelData = [];
+
+      for (const user of directReferrals) {
+        // Get count of their direct referrals
+        const directReferralCount = await User.countDocuments({ introducer: user._id });
+        
+        // Recursively get their referrals for next level
+        const nextLevelReferrals = await buildHierarchicalChain(user._id, currentLevel + 1);
+        
+        levelData.push({
+          id: user._id,
+          name: user.name,
+          displayName: user.displayName,
+          mobile: user.mobile,
+          joinDate: user.createdAt,
+          level: currentLevel,
+          directReferralCount,
+          nextLevelReferrals
+        });
+      }
+
+      return levelData;
+    };
+
+    // Build the complete hierarchical chain
+    const hierarchicalChain = await buildHierarchicalChain(userId);
+
+    console.log('Built hierarchical chain with', hierarchicalChain.length, 'level 1 users');
+    console.log('Level 1 users:', hierarchicalChain.map(u => u.name));
+
+    // Calculate totals per level
+    const calculateLevelTotals = (chain, levelTotals = {}) => {
+      chain.forEach(user => {
+        if (!levelTotals[user.level]) {
+          levelTotals[user.level] = 0;
+        }
+        levelTotals[user.level]++;
+        
+        if (user.nextLevelReferrals && user.nextLevelReferrals.length > 0) {
+          calculateLevelTotals(user.nextLevelReferrals, levelTotals);
+        }
+      });
+      return levelTotals;
+    };
+
+    const levelTotals = calculateLevelTotals(hierarchicalChain);
+    const totalUsers = Object.values(levelTotals).reduce((sum, count) => sum + count, 0);
+
+    console.log('Level totals:', levelTotals);
+    console.log('Total users in chain:', totalUsers);
+
+    res.json({
+      message: 'Hierarchical referral chain retrieved successfully',
+      rootUser: {
+        id: rootUser._id,
+        name: rootUser.name,
+        displayName: rootUser.displayName,
+        mobile: rootUser.mobile,
+        joinDate: rootUser.createdAt
+      },
+      hierarchicalChain,
+      levelTotals,
+      totalUsers,
+      maxLevels
+    });
+
+  } catch (error) {
+    console.error('Get hierarchical chain error:', error);
+    res.status(500).json({ message: 'Error retrieving hierarchical chain' });
+  }
+});
+
+// @route   GET /api/admin/level-users-hierarchical/:userId/:level
+// @desc    Get users at a specific level in the hierarchical chain
+// @access  Private (Admin only)
+router.get('/level-users-hierarchical/:userId/:level', adminAuth, async (req, res) => {
+  try {
+    const { userId, level } = req.params;
+    const targetLevel = parseInt(level);
+
+    // Get the root user
+    const rootUser = await User.findById(userId).select('name displayName mobile');
+    if (!rootUser) {
+      return res.status(404).json({ message: 'Root user not found' });
+    }
+
+    // Helper function to get users at specific level
+    const getUsersAtLevel = async (parentIds, currentLevel = 1) => {
+      if (currentLevel > targetLevel) return [];
+      
+      const users = await User.find({ introducer: { $in: parentIds } })
+        .select('_id name displayName mobile createdAt introducer')
+        .sort({ createdAt: -1 });
+
+      if (currentLevel === targetLevel) {
+        // This is our target level
+        const usersWithReferralCount = await Promise.all(
+          users.map(async (user) => {
+            const referralCount = await User.countDocuments({ introducer: user._id });
+            return {
+              id: user._id,
+              name: user.name,
+              displayName: user.displayName,
+              mobile: user.mobile,
+              joinDate: user.createdAt,
+              referralCount,
+              level: currentLevel
+            };
+          })
+        );
+        return usersWithReferralCount;
+      }
+
+      // Continue to next level
+      const nextParentIds = users.map(u => u._id);
+      return await getUsersAtLevel(nextParentIds, currentLevel + 1);
+    };
+
+    // Get users at the target level
+    const levelUsers = await getUsersAtLevel([userId], 1);
+
+    res.json({
+      message: `Level ${targetLevel} users retrieved successfully`,
+      rootUser: {
+        id: rootUser._id,
+        name: rootUser.name,
+        displayName: rootUser.displayName,
+        mobile: rootUser.mobile
+      },
+      level: targetLevel,
+      users: levelUsers,
+      totalUsers: levelUsers.length
+    });
+
+  } catch (error) {
+    console.error('Get level users hierarchical error:', error);
+    res.status(500).json({ message: 'Error retrieving level users' });
+  }
+});
+
+// @route   GET /api/admin/test-referrals/:mobile
+// @desc    Test endpoint to check specific user's referrals by mobile number
+// @access  Private (Admin only)
+router.get('/test-referrals/:mobile', adminAuth, async (req, res) => {
+  try {
+    const { mobile } = req.params;
+    
+    // Find user by mobile
+    const user = await User.findOne({ mobile }).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found with this mobile number' });
+    }
+
+    console.log('Found user:', user.name, user.displayName, user.mobile);
+
+    // Get their direct referrals
+    const directReferrals = await User.find({ introducer: user._id })
+      .select('name displayName mobile createdAt')
+      .sort({ createdAt: -1 });
+
+    console.log('Direct referrals:', directReferrals.map(r => `${r.name} (@${r.displayName}) - ${r.mobile}`));
+
+    res.json({
+      message: 'User and referrals found',
+      user: {
+        id: user._id,
+        name: user.name,
+        displayName: user.displayName,
+        mobile: user.mobile
+      },
+      directReferrals: directReferrals.map(r => ({
+        id: r._id,
+        name: r.name,
+        displayName: r.displayName,
+        mobile: r.mobile,
+        joinDate: r.createdAt
+      })),
+      count: directReferrals.length
+    });
+
+  } catch (error) {
+    console.error('Test referrals error:', error);
+    res.status(500).json({ message: 'Error testing referrals' });
+  }
+});
+
 module.exports = router;
