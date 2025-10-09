@@ -194,7 +194,7 @@ const SignUp = () => {
         </div>
 
         <div className="form-group" style={{ position: 'relative' }}>
-          <label className="form-label">Introducer (Referral) *</label>
+          <label className="form-label">Enter Your Referral Mobile Number *</label>
           <input
             type="text"
             name="introducerSearch"
@@ -202,7 +202,7 @@ const SignUp = () => {
             onChange={(e) => handleSearchIntroducer(e.target.value)}
             required
             className="form-input"
-            placeholder="Search by mobile number (min 3 digits)"
+            placeholder="Enter 10 Digits Mobile Number"
             autoComplete="off"
           />
           {searchLoading && (

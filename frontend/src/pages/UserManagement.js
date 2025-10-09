@@ -1,19 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 
 const UserManagement = () => {
   const navigate = useNavigate();
-  const [users, setUsers] = useState([]);
-  const [stats, setStats] = useState(null);
+  const [hierarchicalData, setHierarchicalData] = useState([]);
+  const [grandTotals, setGrandTotals] = useState(null);
+  const [totalRootUsers, setTotalRootUsers] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [userReferrals, setUserReferrals] = useState([]);
-  const [showReferrals, setShowReferrals] = useState(false);
-  const [referralsLoading, setReferralsLoading] = useState(false);
+  const [selectedLevel, setSelectedLevel] = useState(null);
+  const [levelUsers, setLevelUsers] = useState([]);
+  const [showLevelModal, setShowLevelModal] = useState(false);
+  const [levelLoading, setLevelLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [availableRootUsers, setAvailableRootUsers] = useState([]);
+  
+  // Hardcoded Rajesh Modi user ID (will be fetched from API)
+  const RAJESH_MODI_MOBILE = '9867477227';
 
   useEffect(() => {
     // Check admin authentication
@@ -23,46 +28,78 @@ const UserManagement = () => {
       return;
     }
 
-    fetchUsers();
-    fetchStats();
+    fetchHierarchicalNetwork();
   }, [navigate]);
 
-  const fetchUsers = async () => {
+  const fetchHierarchicalNetwork = async () => {
     try {
-      const response = await api.get('/admin/users');
-      setUsers(response.data.users || []);
+      setLoading(true);
+      // Always fetch all root users to find Rajesh Modi's ID
+      const response = await api.get('/admin/referral-network');
+      const allData = response.data.data || [];
+      
+      // Find Rajesh Modi from the data
+      const rajeshModiData = allData.find(user => 
+        user.mobile === RAJESH_MODI_MOBILE || 
+        user.name?.toLowerCase().includes('rajesh modi')
+      );
+      
+      if (rajeshModiData) {
+        // Set only Rajesh Modi's data
+        setHierarchicalData([rajeshModiData]);
+        setTotalRootUsers(1);
+        setAvailableRootUsers([{
+          id: rajeshModiData.id,
+          name: rajeshModiData.name,
+          displayName: rajeshModiData.displayName,
+          mobile: rajeshModiData.mobile
+        }]);
+      } else {
+        // Fallback if Rajesh Modi not found - show all data
+        setHierarchicalData(allData);
+        setTotalRootUsers(response.data.totalRootUsers || 0);
+        const rootUsers = allData.map(entry => ({
+          id: entry.id,
+          name: entry.name,
+          displayName: entry.displayName,
+          mobile: entry.mobile
+        }));
+        setAvailableRootUsers(rootUsers);
+      }
+      
+      setGrandTotals(response.data.grandTotals || {});
+      
     } catch (err) {
-      console.error('Fetch users error:', err);
-      setError(err.response?.data?.message || 'Failed to fetch users');
-      setUsers([]);
+      console.error('Fetch hierarchical network error:', err);
+      setError(err.response?.data?.message || 'Failed to fetch hierarchical network');
+      setHierarchicalData([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchStats = async () => {
-    try {
-      const response = await api.get('/admin/users/stats');
-      setStats(response.data.stats);
-    } catch (err) {
-      console.error('Fetch stats error:', err);
-    }
-  };
-
-  const fetchUserReferrals = async (userId, userName) => {
-    setReferralsLoading(true);
+  const fetchLevelUsers = async (branchUserId, level, branchUserName) => {
+    setLevelLoading(true);
     setError('');
     
     try {
-      const response = await api.get(`/admin/users/${userId}/referrals`);
-      setUserReferrals(response.data.referrals || []);
-      setSelectedUser({ id: userId, name: userName, ...response.data.introducer });
-      setShowReferrals(true);
+      const response = await api.get(`/admin/level-users/${branchUserId}/${level}`);
+      if (response.data.success) {
+        setLevelUsers(response.data.users || []);
+        setSelectedLevel({
+          branchUserId,
+          level,
+          branchUserName,
+          branchUser: response.data.branchUser,
+          totalUsers: response.data.totalUsers
+        });
+        setShowLevelModal(true);
+      }
     } catch (err) {
-      console.error('Fetch referrals error:', err);
-      setError(err.response?.data?.message || 'Failed to fetch user referrals');
+      console.error('Fetch level users error:', err);
+      setError(err.response?.data?.message || 'Failed to fetch level users');
     } finally {
-      setReferralsLoading(false);
+      setLevelLoading(false);
     }
   };
 
@@ -76,13 +113,12 @@ const UserManagement = () => {
       const response = await api.delete(`/admin/users/${userId}`);
       setSuccess(`User "${userName}" deleted successfully. ${response.data.reassignedReferralsCount} referrals were reassigned.`);
       
-      // Refresh users list
-      fetchUsers();
-      fetchStats();
+      // Refresh hierarchical data
+      fetchHierarchicalNetwork();
       
-      // Close referrals modal if it was open
-      if (showReferrals && selectedUser?.id === userId) {
-        setShowReferrals(false);
+      // Close level modal if it was open
+      if (showLevelModal && selectedLevel?.rootUserId === userId) {
+        setShowLevelModal(false);
       }
     } catch (err) {
       console.error('Delete user error:', err);
@@ -96,14 +132,37 @@ const UserManagement = () => {
     navigate('/admin/login');
   };
 
-  // Filter users based on search term
-  const filteredUsers = users.filter(user =>
-    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.mobile?.includes(searchTerm) ||
-    user.introducerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.introducerMobile?.includes(searchTerm)
-  );
+  // Filter hierarchical data based on search term only (root user filtering is handled by backend)
+  const filteredHierarchicalData = useMemo(() => {
+    if (!hierarchicalData) return [];
+    
+    // Apply search term filter
+    if (searchTerm) {
+      return hierarchicalData.map(rootEntry => {
+        const matchesSearch = rootEntry.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          rootEntry.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          rootEntry.mobile?.includes(searchTerm);
+        
+        let filteredBranches = rootEntry.branches;
+        if (!matchesSearch) {
+          filteredBranches = rootEntry.branches.filter(branch =>
+            branch.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            branch.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            branch.mobile?.includes(searchTerm)
+          );
+        }
+        
+        return {
+          ...rootEntry,
+          branches: filteredBranches
+        };
+      }).filter(entry => entry.branches.length > 0);
+    }
+    
+    return hierarchicalData;
+  }, [hierarchicalData, searchTerm]);
+
+
 
   if (loading) {
     return <div className="loading">Loading user management...</div>;
@@ -132,36 +191,57 @@ const UserManagement = () => {
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
 
-        {/* Statistics Cards */}
-        {stats && (
+        {/* 6-Level Statistics Cards */}
+        {grandTotals && (
           <div className="stats-section">
-            <div className="stats-grid">
-              <div className="stat-card">
+            <div className="hierarchy-stats-grid">
+              <div className="stat-card total-users">
                 <div className="stat-icon">👥</div>
                 <div className="stat-info">
-                  <div className="stat-number">{stats.totalUsers}</div>
-                  <div className="stat-label">Total Users</div>
+                  <div className="stat-number">{totalRootUsers}</div>
+                  <div className="stat-label">Root Users</div>
                 </div>
               </div>
-              <div className="stat-card">
-                <div className="stat-icon">📅</div>
+              <div className="stat-card level-1">
+                <div className="stat-icon">1️⃣</div>
                 <div className="stat-info">
-                  <div className="stat-number">{stats.usersToday}</div>
-                  <div className="stat-label">Today</div>
+                  <div className="stat-number">{grandTotals.level1}</div>
+                  <div className="stat-label">Level 1</div>
                 </div>
               </div>
-              <div className="stat-card">
-                <div className="stat-icon">📊</div>
+              <div className="stat-card level-2">
+                <div className="stat-icon">2️⃣</div>
                 <div className="stat-info">
-                  <div className="stat-number">{stats.usersThisWeek}</div>
-                  <div className="stat-label">This Week</div>
+                  <div className="stat-number">{grandTotals.level2}</div>
+                  <div className="stat-label">Level 2</div>
                 </div>
               </div>
-              <div className="stat-card">
-                <div className="stat-icon">📈</div>
+              <div className="stat-card level-3">
+                <div className="stat-icon">3️⃣</div>
                 <div className="stat-info">
-                  <div className="stat-number">{stats.usersThisMonth}</div>
-                  <div className="stat-label">This Month</div>
+                  <div className="stat-number">{grandTotals.level3}</div>
+                  <div className="stat-label">Level 3</div>
+                </div>
+              </div>
+              <div className="stat-card level-4">
+                <div className="stat-icon">4️⃣</div>
+                <div className="stat-info">
+                  <div className="stat-number">{grandTotals.level4}</div>
+                  <div className="stat-label">Level 4</div>
+                </div>
+              </div>
+              <div className="stat-card level-5">
+                <div className="stat-icon">5️⃣</div>
+                <div className="stat-info">
+                  <div className="stat-number">{grandTotals.level5}</div>
+                  <div className="stat-label">Level 5</div>
+                </div>
+              </div>
+              <div className="stat-card level-6">
+                <div className="stat-icon">6️⃣</div>
+                <div className="stat-info">
+                  <div className="stat-number">{grandTotals.level6}</div>
+                  <div className="stat-label">Level 6</div>
                 </div>
               </div>
             </div>
@@ -179,160 +259,234 @@ const UserManagement = () => {
               className="search-input"
             />
           </div>
-          <div className="total-count">
-            Showing {filteredUsers.length} of {users.length} users
-          </div>
         </div>
 
-        {/* Users Table */}
-        <div className="users-section">
-          <h2>All Users ({filteredUsers.length})</h2>
-          {filteredUsers.length === 0 ? (
-            <p>No users found.</p>
+        {/* 6-Level Hierarchical Table - Branch Based */}
+        <div className="hierarchy-section">
+          <h2>All Users</h2>
+          {filteredHierarchicalData.length === 0 ? (
+            <p>No root users found.</p>
           ) : (
-            <div className="users-table-container">
-              <table className="users-table">
+            <div className="hierarchy-table-container">
+              <table className="hierarchy-table">
                 <thead>
                   <tr>
-                    <th>User Info</th>
-                    <th>Contact</th>
-                    <th>Introducer</th>
-                    <th>Referrals Made</th>
-                    <th>Join Date</th>
-                    <th>Actions</th>
+                    <th className="level-header">Level 1 (User + Phone)</th>
+                    <th className="level-header">Level 2</th>
+                    <th className="level-header">Level 3</th>
+                    <th className="level-header">Level 4</th>
+                    <th className="level-header">Level 5</th>
+                    <th className="level-header">Level 6</th>
+                    <th className="total-header">Total</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map(user => (
-                    <tr key={user._id}>
-                      <td>
-                        <div className="user-info">
-                          <div className="user-name">{user.name}</div>
-                          <div className="user-display">@{user.displayName}</div>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="contact-info">
-                          <div className="mobile">{user.mobile}</div>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="introducer-info">
-                          <div className="introducer-name">{user.introducerName}</div>
-                          <div className="introducer-mobile">{user.introducerMobile}</div>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="referral-count">
-                          <span className="count-badge">{user.referralCount || 0}</span>
-                          {user.referralCount > 0 && (
+                  {filteredHierarchicalData.map((rootEntry) => (
+                    rootEntry.branches.map((branch, branchIndex) => (
+                      <tr key={`${rootEntry.id}-${branchIndex}`} className={`hierarchy-row ${branchIndex % 2 === 0 ? 'even' : 'odd'} ${branch.isRoot ? 'root-branch' : 'user-branch'}`}>
+                        <td className="level-1-cell">
+                          <div className="branch-user-info">
+                            <div className="branch-user-name">
+                              {branch.isRoot && <span className="root-indicator">👑 </span>}
+                              {branch.name}
+                            </div>
+                            <div className="branch-user-meta">
+                              <span className="branch-display">@{branch.displayName}</span>
+                              <span className="branch-mobile">{branch.mobile}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="level-count-cell level-2">
+                          {branch.level2 > 0 ? (
                             <button
-                              onClick={() => fetchUserReferrals(user._id, user.name)}
-                              className="view-referrals-btn"
-                              disabled={referralsLoading}
+                              className="count-button level-2-btn"
+                              onClick={() => fetchLevelUsers(branch.id, 2, branch.name)}
+                              disabled={levelLoading}
+                              title={`View ${branch.level2} users at Level 2 under ${branch.name}`}
                             >
-                              View
+                              {branch.level2}
                             </button>
+                          ) : (
+                            <span className="zero-count">0</span>
                           )}
-                        </div>
+                        </td>
+                        <td className="level-count-cell level-3">
+                          {branch.level3 > 0 ? (
+                            <button
+                              className="count-button level-3-btn"
+                              onClick={() => fetchLevelUsers(branch.id, 3, branch.name)}
+                              disabled={levelLoading}
+                              title={`View ${branch.level3} users at Level 3 under ${branch.name}`}
+                            >
+                              {branch.level3}
+                            </button>
+                          ) : (
+                            <span className="zero-count">0</span>
+                          )}
+                        </td>
+                        <td className="level-count-cell level-4">
+                          {branch.level4 > 0 ? (
+                            <button
+                              className="count-button level-4-btn"
+                              onClick={() => fetchLevelUsers(branch.id, 4, branch.name)}
+                              disabled={levelLoading}
+                              title={`View ${branch.level4} users at Level 4 under ${branch.name}`}
+                            >
+                              {branch.level4}
+                            </button>
+                          ) : (
+                            <span className="zero-count">0</span>
+                          )}
+                        </td>
+                        <td className="level-count-cell level-5">
+                          {branch.level5 > 0 ? (
+                            <button
+                              className="count-button level-5-btn"
+                              onClick={() => fetchLevelUsers(branch.id, 5, branch.name)}
+                              disabled={levelLoading}
+                              title={`View ${branch.level5} users at Level 5 under ${branch.name}`}
+                            >
+                              {branch.level5}
+                            </button>
+                          ) : (
+                            <span className="zero-count">0</span>
+                          )}
+                        </td>
+                        <td className="level-count-cell level-6">
+                          {branch.level6 > 0 ? (
+                            <button
+                              className="count-button level-6-btn"
+                              onClick={() => fetchLevelUsers(branch.id, 6, branch.name)}
+                              disabled={levelLoading}
+                              title={`View ${branch.level6} users at Level 6 under ${branch.name}`}
+                            >
+                              {branch.level6}
+                            </button>
+                          ) : (
+                            <span className="zero-count">0</span>
+                          )}
+                        </td>
+                        <td className="total-cell">
+                          <span className="total-count">{branch.totalUsers}</span>
+                        </td>
+                      </tr>
+                    ))
+                  ))}
+                
+                </tbody>
+                {grandTotals && (
+                  <tfoot>
+                    <tr className="totals-row">
+                      <td className="totals-label">
+                        <strong>Grand Totals</strong>
                       </td>
-                      <td>
-                        <div className="join-date">
-                          {new Date(user.createdAt).toLocaleDateString()}
-                        </div>
+                      <td className="level-total">
+                        <strong>{grandTotals.level2}</strong>
                       </td>
-                      <td>
-                        <div className="user-actions">
-                          <button
-                            onClick={() => handleDeleteUser(user._id, user.name)}
-                            className="delete-user-btn"
-                          >
-                            🗑️ Delete
-                          </button>
-                        </div>
+                      <td className="level-total">
+                        <strong>{grandTotals.level3}</strong>
+                      </td>
+                      <td className="level-total">
+                        <strong>{grandTotals.level4}</strong>
+                      </td>
+                      <td className="level-total">
+                        <strong>{grandTotals.level5}</strong>
+                      </td>
+                      <td className="level-total">
+                        <strong>{grandTotals.level6}</strong>
+                      </td>
+                      <td className="grand-total">
+                        <strong>{grandTotals.total}</strong>
+                      </td>
+                      <td className="totals-actions">
+                        <span className="total-users-label">{filteredHierarchicalData.reduce((sum, entry) => sum + entry.branches.length, 0)} Branches</span>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
+                  </tfoot>
+                )}
               </table>
             </div>
           )}
         </div>
 
-        {/* Top Introducers */}
-        {stats && stats.topIntroducers && stats.topIntroducers.length > 0 && (
-          <div className="top-introducers-section">
-            <h2>Top Introducers</h2>
-            <div className="introducers-grid">
-              {stats.topIntroducers.map((introducer, index) => (
-                <div key={introducer._id} className="introducer-card">
-                  <div className="rank">#{index + 1}</div>
-                  <div className="introducer-info">
-                    <div className="name">{introducer.name}</div>
-                    <div className="display-name">@{introducer.displayName}</div>
-                    <div className="mobile">{introducer.mobile}</div>
-                  </div>
-                  <div className="referral-count">
-                    <span className="count">{introducer.count}</span>
-                    <span className="label">referrals</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Referrals Modal */}
-        {showReferrals && (
-          <div className="modal-overlay" onClick={() => setShowReferrals(false)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        {/* Level Users Modal */}
+        {showLevelModal && (
+          <div className="modal-overlay" onClick={() => setShowLevelModal(false)}>
+            <div className="level-modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h3>Users Referred by {selectedUser?.name}</h3>
+                <h3>
+                  {selectedLevel?.level}️⃣ Level {selectedLevel?.level} Users under {selectedLevel?.branchUserName}
+                </h3>
                 <button 
                   className="modal-close"
-                  onClick={() => setShowReferrals(false)}
+                  onClick={() => setShowLevelModal(false)}
                 >
                   ✕
                 </button>
               </div>
               
               <div className="modal-body">
-                {referralsLoading ? (
-                  <div className="loading">Loading referrals...</div>
-                ) : userReferrals.length === 0 ? (
-                  <p>No referrals found for this user.</p>
-                ) : (
-                  <div className="referrals-list">
-                    <div className="referrals-summary">
-                      <strong>Total Referrals: {userReferrals.length}</strong>
+                {levelLoading ? (
+                  <div className="loading">Loading level users...</div>
+                ) : selectedLevel && levelUsers ? (
+                  <div className="level-users-content">
+                    <div className="level-info">
+                      <div className="level-header-info">
+                        <h4>� Level {selectedLevel.level} Statistics</h4>
+                        <div className="level-stats">
+                          <div className="stat-item">
+                            <span className="stat-label">Branch User:</span>
+                            <span className="stat-value">{selectedLevel.branchUser?.name} (@{selectedLevel.branchUser?.displayName})</span>
+                          </div>
+                          <div className="stat-item">
+                            <span className="stat-label">Total Users at Level {selectedLevel.level}:</span>
+                            <span className="stat-value">{selectedLevel.totalUsers}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <table className="referrals-table">
-                      <thead>
-                        <tr>
-                          <th>Name</th>
-                          <th>Display Name</th>
-                          <th>Mobile</th>
-                          <th>Sub-Referrals</th>
-                          <th>Join Date</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {userReferrals.map(referral => (
-                          <tr key={referral._id}>
-                            <td>{referral.name}</td>
-                            <td>@{referral.displayName}</td>
-                            <td>{referral.mobile}</td>
-                            <td>
-                              <span className="sub-referral-count">
-                                {referral.subReferralCount || 0}
-                              </span>
-                            </td>
-                            <td>{new Date(referral.createdAt).toLocaleDateString()}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+
+                    <div className="users-list">
+                      <h4>� Users List</h4>
+                      {levelUsers.length === 0 ? (
+                        <p>No users found at this level.</p>
+                      ) : (
+                        <div className="level-users-table-container">
+                          <table className="level-users-table">
+                            <thead>
+                              <tr>
+                                <th>Name</th>
+                                <th>Display Name</th>
+                                <th>Mobile</th>
+                                <th>Introducer</th>
+                                <th>Join Date</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {levelUsers.map((user) => (
+                                <tr key={user._id}>
+                                  <td className="user-name-cell">{user.name}</td>
+                                  <td className="user-display-cell">@{user.displayName}</td>
+                                  <td className="user-mobile-cell">{user.mobile}</td>
+                                  <td className="user-introducer-cell">
+                                    <div className="introducer-info">
+                                      <div className="introducer-name">{user.introducerName}</div>
+                                      <div className="introducer-mobile">{user.introducerMobile}</div>
+                                    </div>
+                                  </td>
+                                  <td className="user-date-cell">
+                                    {new Date(user.createdAt).toLocaleDateString()}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
                   </div>
+                ) : (
+                  <p>No level data available.</p>
                 )}
               </div>
             </div>
@@ -340,11 +494,754 @@ const UserManagement = () => {
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         .user-management {
           padding: 20px;
-          max-width: 1400px;
+          max-width: 1600px;
           margin: 0 auto;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        }
+
+        /* Hierarchy Statistics Grid */
+        .hierarchy-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+          gap: 15px;
+          margin-bottom: 25px;
+        }
+
+        .stat-card {
+          background: white;
+          border: 2px solid #e0e0e0;
+          padding: 20px 15px;
+          text-align: center;
+          transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+          border-color: #3b82f6;
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+
+        /* Hierarchy Table */
+        .hierarchy-section {
+          background: white;
+          border: 2px solid #e0e0e0;
+          padding: 30px;
+          margin-bottom: 30px;
+        }
+
+        .hierarchy-section h2 {
+          margin: 0 0 25px 0;
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #1f2937;
+          border-bottom: 3px solid #3b82f6;
+          padding-bottom: 12px;
+        }
+
+        .hierarchy-table-container {
+          overflow-x: auto;
+          border: 2px solid #e0e0e0;
+        }
+
+        .hierarchy-table {
+          width: 100%;
+          border-collapse: collapse;
+          background: white;
+          font-size: 0.95rem;
+        }
+
+        .hierarchy-table th {
+          background: #f8fafc;
+          color: #1f2937;
+          padding: 16px 12px;
+          text-align: center;
+          font-weight: 700;
+          font-size: 0.875rem;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          border-bottom: 2px solid #3b82f6;
+          border-right: 1px solid #e5e7eb;
+        }
+
+        .hierarchy-table th:last-child {
+          border-right: none;
+        }
+
+        .hierarchy-table th.level-header {
+          min-width: 100px;
+        }
+
+        .hierarchy-table th:first-child {
+          background: #f8fafc;
+          min-width: 280px;
+          text-align: left;
+          padding-left: 20px;
+        }
+
+        .hierarchy-table th.total-header {
+          background: #f8fafc;
+          min-width: 100px;
+          font-weight: 800;
+        }
+
+        .hierarchy-table td {
+          padding: 16px 12px;
+          text-align: center;
+          border-bottom: 1px solid #e5e7eb;
+          border-right: 1px solid #f3f4f6;
+          vertical-align: middle;
+        }
+
+        .hierarchy-table td:last-child {
+          border-right: none;
+        }
+
+        .hierarchy-row {
+          background: white;
+          transition: all 0.2s ease;
+        }
+
+        .hierarchy-row.even {
+          background: #f9fafb;
+        }
+
+        .hierarchy-row:hover {
+          background: #eff6ff;
+          box-shadow: inset 3px 0 0 #3b82f6;
+        }
+
+        .hierarchy-row.root-branch {
+          background: #fef3c7;
+          border-left: 4px solid #f59e0b;
+        }
+
+        .hierarchy-row.root-branch:hover {
+          background: #fde68a;
+          box-shadow: inset 4px 0 0 #f59e0b;
+        }
+
+        .level-1-cell {
+          text-align: left !important;
+          padding: 18px 20px !important;
+          border-right: 2px solid #e5e7eb !important;
+        }
+
+        .branch-user-info {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .branch-user-name {
+          font-weight: 700;
+          font-size: 1rem;
+          color: #111827;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .root-indicator {
+          font-size: 1.1rem;
+        }
+
+        .branch-user-meta {
+          display: flex;
+          gap: 15px;
+          font-size: 0.875rem;
+          color: #6b7280;
+        }
+
+        .branch-display {
+          font-weight: 600;
+          color: #3b82f6;
+        }
+
+        .branch-mobile {
+          font-family: 'Courier New', monospace;
+          color: #6b7280;
+          font-weight: 500;
+        }
+
+        .level-count-cell {
+          padding: 12px !important;
+        }
+
+        .count-button {
+          display: inline-block;
+          padding: 8px 16px;
+          border: 2px solid #3b82f6;
+          background: white;
+          color: #3b82f6;
+          font-weight: 700;
+          font-size: 0.95rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          min-width: 55px;
+        }
+
+        .count-button:hover {
+          background: #3b82f6;
+          color: white;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+        }
+
+        .count-button:active {
+          transform: translateY(0);
+        }
+
+        .zero-count {
+          color: #d1d5db;
+          font-size: 0.95rem;
+          font-weight: 600;
+        }
+
+        .total-cell {
+          background: #f0fdf4 !important;
+          border-left: 2px solid #10b981 !important;
+          font-weight: 700;
+        }
+
+        .total-count {
+          display: inline-block;
+          padding: 8px 16px;
+          background: #10b981;
+          color: white;
+          font-weight: 800;
+          font-size: 1.05rem;
+          min-width: 50px;
+        }
+
+        /* Footer Totals */
+        .totals-row {
+          background: #1f2937 !important;
+          color: white;
+          font-weight: 800;
+        }
+
+        .totals-row td {
+          padding: 18px 12px;
+          border-bottom: none;
+          border-top: 3px solid #3b82f6;
+          color: white !important;
+        }
+
+        .totals-label {
+          text-align: left !important;
+          padding-left: 20px !important;
+          font-size: 1.1rem;
+          color: white !important;
+        }
+
+        .level-total {
+          background: #374151 !important;
+          font-size: 1.05rem;
+          color: white !important;
+          font-weight: 700;
+        }
+
+        .grand-total {
+          background: #10b981 !important;
+          font-size: 1.2rem;
+          font-weight: 900;
+          color: white !important;
+        }
+
+        .total-users-label {
+          color: #d1d5db;
+          font-size: 0.875rem;
+          font-weight: 600;
+          margin-left: 12px;
+        }
+
+        /* Level Modal */
+        .level-modal-content {
+          background: white;
+          border-radius: 15px;
+          width: 95%;
+          max-width: 1200px;
+          max-height: 90vh;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .chain-visualization {
+          padding: 20px;
+          overflow-y: auto;
+        }
+
+        .chain-stats {
+          display: grid;
+          grid-template-columns: 1fr 2fr;
+          gap: 20px;
+          margin-bottom: 25px;
+        }
+
+        .root-user h4 {
+          color: #667eea;
+          margin-bottom: 10px;
+        }
+
+        .user-card.root {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          padding: 15px;
+          border-radius: 10px;
+          text-align: center;
+        }
+
+        .user-card.root .user-name {
+          font-size: 1.2rem;
+          font-weight: 700;
+          margin-bottom: 5px;
+        }
+
+        .user-card.root .user-display {
+          opacity: 0.9;
+          margin-bottom: 5px;
+        }
+
+        .user-card.root .user-mobile {
+          opacity: 0.8;
+          font-size: 0.9rem;
+        }
+
+        .level-summary h4 {
+          color: #667eea;
+          margin-bottom: 15px;
+        }
+
+        .levels-grid {
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 10px;
+          margin-bottom: 15px;
+        }
+
+        .level-stat {
+          text-align: center;
+          padding: 10px;
+          border-radius: 8px;
+          color: white;
+        }
+
+        .level-stat.level-1 {
+          background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+          color: #333;
+        }
+
+        .level-stat.level-2 {
+          background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
+          color: #333;
+        }
+
+        .level-stat.level-3 {
+          background: linear-gradient(135deg, #cd7f32 0%, #daa520 100%);
+        }
+
+        .level-stat.level-4 {
+          background: linear-gradient(135deg, #8e44ad 0%, #3498db 100%);
+        }
+
+        .level-stat.level-5 {
+          background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        .level-number {
+          font-size: 0.8rem;
+          font-weight: 600;
+        }
+
+        .level-count {
+          font-size: 1.5rem;
+          font-weight: 800;
+        }
+
+        .total-referrals {
+          text-align: center;
+          padding: 10px;
+          background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+          color: white;
+          border-radius: 8px;
+          font-size: 1.1rem;
+        }
+
+        .chain-tree h4 {
+          color: #667eea;
+          margin-bottom: 15px;
+        }
+
+        .tree-container {
+          background: #f8f9fa;
+          border-radius: 10px;
+          padding: 20px;
+          max-height: 400px;
+          overflow-y: auto;
+        }
+
+        .tree-level {
+          margin-left: 20px;
+          border-left: 2px solid #ddd;
+          padding-left: 15px;
+        }
+
+        .tree-level.level-1 {
+          margin-left: 0;
+          border-left: none;
+          padding-left: 0;
+        }
+
+        .tree-node {
+          margin-bottom: 15px;
+          position: relative;
+        }
+
+        .node-card {
+          background: white;
+          border-radius: 8px;
+          padding: 12px;
+          border-left: 4px solid #ddd;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .node-card.level-1 {
+          border-left-color: #ffd700;
+          background: rgba(255, 215, 0, 0.05);
+        }
+
+        .node-card.level-2 {
+          border-left-color: #c0c0c0;
+          background: rgba(192, 192, 192, 0.05);
+        }
+
+        .node-card.level-3 {
+          border-left-color: #cd7f32;
+          background: rgba(205, 127, 50, 0.05);
+        }
+
+        .node-card.level-4 {
+          border-left-color: #8e44ad;
+          background: rgba(142, 68, 173, 0.05);
+        }
+
+        .node-card.level-5 {
+          border-left-color: #e74c3c;
+          background: rgba(231, 76, 60, 0.05);
+        }
+
+        .node-info {
+          flex: 1;
+        }
+
+        .node-name {
+          font-weight: 700;
+          color: #333;
+          margin-bottom: 2px;
+        }
+
+        .node-display {
+          color: #667eea;
+          font-size: 0.9rem;
+          margin-bottom: 2px;
+        }
+
+        .node-mobile {
+          color: #666;
+          font-size: 0.8rem;
+          font-family: monospace;
+        }
+
+        .node-meta {
+          display: flex;
+          gap: 10px;
+          margin-top: 5px;
+        }
+
+        .level-badge {
+          background: #667eea;
+          color: white;
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-size: 0.7rem;
+          font-weight: 600;
+        }
+
+        .join-date {
+          color: #888;
+          font-size: 0.7rem;
+        }
+
+        .children-count {
+          background: #2ecc71;
+          color: white;
+          padding: 4px 8px;
+          border-radius: 20px;
+          font-size: 0.8rem;
+          font-weight: 600;
+        }
+
+        .level-users-content {
+          padding: 20px;
+          overflow-y: auto;
+        }
+
+        .level-info {
+          margin-bottom: 25px;
+        }
+
+        .level-header-info h4 {
+          color: #667eea;
+          margin-bottom: 15px;
+        }
+
+        .level-stats {
+          display: grid;
+          gap: 10px;
+          margin-bottom: 15px;
+        }
+
+        .stat-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 10px;
+          background: #f8f9fa;
+          border-radius: 6px;
+        }
+
+        .stat-label {
+          font-weight: 600;
+          color: #333;
+        }
+
+        .stat-value {
+          color: #667eea;
+          font-weight: 700;
+        }
+
+        .users-list h4 {
+          color: #667eea;
+          margin-bottom: 15px;
+        }
+
+        .level-users-table-container {
+          overflow-x: auto;
+          border: 1px solid #e1e5e9;
+          border-radius: 8px;
+        }
+
+        .level-users-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 0.9rem;
+        }
+
+        .level-users-table th {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          padding: 12px;
+          text-align: left;
+          font-weight: 600;
+        }
+
+        .level-users-table td {
+          padding: 12px;
+          border-bottom: 1px solid #eee;
+          vertical-align: top;
+        }
+
+        .level-users-table tbody tr:hover {
+          background: #f8f9fa;
+        }
+
+        .user-name-cell {
+          font-weight: 700;
+          color: #333;
+        }
+
+        .user-display-cell {
+          color: #667eea;
+          font-weight: 600;
+        }
+
+        .user-mobile-cell {
+          font-family: monospace;
+          background: #f0f0f0;
+          padding: 4px 8px;
+          border-radius: 4px;
+          display: inline-block;
+        }
+
+        .user-introducer-cell {
+          font-size: 0.85rem;
+        }
+
+        .introducer-info .introducer-name {
+          font-weight: 600;
+          color: #333;
+          margin-bottom: 2px;
+        }
+
+        .introducer-info .introducer-mobile {
+          color: #666;
+          font-family: monospace;
+          font-size: 0.8rem;
+        }
+
+        .user-date-cell {
+          color: #666;
+          font-size: 0.85rem;
+        }
+
+        /* Branch-based table styles */
+        .root-branch {
+          background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+          border-left: 4px solid #f39c12;
+        }
+
+        .user-branch {
+          background: #fff;
+        }
+
+        .branch-user-info {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .branch-user-name {
+          font-weight: 700;
+          color: #333;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+        }
+
+        .root-indicator {
+          color: #f39c12;
+          font-size: 1.1em;
+        }
+
+        .branch-user-meta {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .branch-display {
+          color: #667eea;
+          font-weight: 600;
+          font-size: 0.9rem;
+        }
+
+        .branch-mobile {
+          color: #666;
+          font-family: monospace;
+          background: #f0f0f0;
+          padding: 2px 6px;
+          border-radius: 3px;
+          font-size: 0.8rem;
+          display: inline-block;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+          .network-stats-grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
+          
+          .network-table {
+            font-size: 0.8rem;
+          }
+          
+          .network-table th,
+          .network-table td {
+            padding: 8px 6px;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .user-management {
+            padding: 15px;
+          }
+          
+          .network-stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+          }
+          
+          .network-section {
+            padding: 15px;
+          }
+          
+          .network-table-container {
+            font-size: 0.75rem;
+          }
+          
+          .user-cell {
+            padding: 10px !important;
+          }
+          
+          .user-info .user-name {
+            font-size: 0.9rem;
+          }
+          
+          .action-buttons {
+            flex-direction: column;
+            gap: 4px;
+          }
+          
+          .view-chain-btn,
+          .delete-user-btn {
+            font-size: 0.7rem;
+            padding: 4px 6px;
+          }
+          
+          .chain-stats {
+            grid-template-columns: 1fr;
+            gap: 15px;
+          }
+          
+          .levels-grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
+          
+          .chain-modal-content {
+            width: 98%;
+            max-height: 95vh;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .network-stats-grid {
+            grid-template-columns: 1fr;
+          }
+          
+          .levels-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          
+          .tree-level {
+            margin-left: 10px;
+            padding-left: 10px;
+          }
+          
+          .node-card {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+          }
+          
+          .children-count {
+            align-self: flex-end;
+          }
         }
 
         .stats-section {
@@ -375,46 +1272,79 @@ const UserManagement = () => {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          border-radius: 50%;
+          background: #3b82f6;
+          color: white;
+          margin: 0 auto 10px;
+          border: 3px solid #e0e0e0;
         }
 
         .stat-number {
-          font-size: 2rem;
-          font-weight: bold;
-          color: #333;
+          font-size: 2.2rem;
+          font-weight: 800;
+          color: #111827;
+          margin: 8px 0;
         }
 
         .stat-label {
-          color: #666;
-          font-size: 0.9rem;
+          color: #6b7280;
+          font-size: 0.875rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
 
         .controls-section {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 20px;
+          margin-bottom: 25px;
           gap: 20px;
+          flex-wrap: wrap;
+        }
+
+        .user-info-header {
+          background: #1f2937;
+          padding: 20px 25px;
+          color: white;
+          border-left: 5px solid #3b82f6;
+          flex: 1;
+        }
+
+        .user-info-header h3 {
+          color: white;
+          font-size: 1.3rem;
+          font-weight: 700;
+          margin: 0 0 8px 0;
+        }
+
+        .user-info-header .info-text {
+          color: #d1d5db;
+          font-size: 0.95rem;
+          margin: 0;
+          font-weight: 400;
         }
 
         .search-container {
-          flex: 1;
-          max-width: 400px;
+          flex: 0 0 350px;
         }
 
         .search-input {
           width: 100%;
-          padding: 12px 16px;
-          border: 2px solid #e1e5e9;
-          border-radius: 8px;
-          font-size: 14px;
-          transition: border-color 0.3s;
+          padding: 14px 18px;
+          border: 2px solid #e0e0e0;
+          font-size: 1rem;
+          background: white;
+          transition: all 0.3s ease;
         }
 
         .search-input:focus {
           outline: none;
-          border-color: #667eea;
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .search-input::placeholder {
+          color: #9ca3af;
         }
 
         .total-count {
@@ -662,6 +1592,13 @@ const UserManagement = () => {
           font-size: 0.8rem;
         }
 
+        .no-data-message {
+          text-align: center;
+          padding: 30px;
+          color: #666;
+          font-style: italic;
+        }
+
         @media (max-width: 768px) {
           .stats-grid {
             grid-template-columns: repeat(2, 1fr);
@@ -678,6 +1615,96 @@ const UserManagement = () => {
           
           .introducers-grid {
             grid-template-columns: 1fr;
+          }
+
+          .hierarchy-table {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .hierarchy-table th,
+          .hierarchy-table td {
+            min-width: 120px;
+            font-size: 0.8rem;
+            padding: 8px;
+          }
+
+          .root-user-info {
+            flex-direction: column;
+            text-align: center;
+          }
+
+          .level-count-button {
+            font-size: 0.7rem;
+            padding: 4px 8px;
+            min-width: 40px;
+            height: 32px;
+          }
+
+          .direct-referrals {
+            font-size: 0.8rem;
+          }
+
+          .level-modal .modal-content {
+            width: 95%;
+            height: 85vh;
+            margin: 2.5vh auto;
+            padding: 15px;
+          }
+
+          .level-users-table {
+            font-size: 0.8rem;
+          }
+
+          .level-users-table th,
+          .level-users-table td {
+            padding: 8px;
+          }
+
+          .user-mobile-cell {
+            font-size: 0.7rem;
+            padding: 2px 4px;
+          }
+
+          .stat-item {
+            flex-direction: column;
+            text-align: center;
+            gap: 5px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .hierarchy-table th,
+          .hierarchy-table td {
+            min-width: 100px;
+            font-size: 0.75rem;
+            padding: 6px;
+          }
+
+          .root-user-info h4 {
+            font-size: 1rem;
+          }
+
+          .level-count-button {
+            font-size: 0.65rem;
+            padding: 3px 6px;
+            min-width: 35px;
+            height: 28px;
+          }
+
+          .level-modal .modal-content {
+            height: 90vh;
+            margin: 5vh auto;
+            padding: 10px;
+          }
+
+          .level-users-table {
+            font-size: 0.75rem;
+          }
+
+          .level-users-table th,
+          .level-users-table td {
+            padding: 6px;
           }
         }
       `}</style>
