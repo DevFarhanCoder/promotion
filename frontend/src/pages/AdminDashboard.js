@@ -14,11 +14,9 @@ const AdminDashboard = () => {
   const [description, setDescription] = useState('');
 
   useEffect(() => {
-    // Set admin token for API calls
+    // Check if admin token exists
     const adminToken = localStorage.getItem('adminToken');
-    if (adminToken) {
-      api.defaults.headers.Authorization = `Bearer ${adminToken}`;
-    } else {
+    if (!adminToken) {
       navigate('/admin/login');
       return;
     }
@@ -128,6 +126,9 @@ const AdminDashboard = () => {
             ⚙️ Admin Dashboard
           </div>
           <div className="navbar-nav">
+            <button onClick={() => navigate('/admin/users')} className="nav-button">
+              👥 Manage Users
+            </button>
             <button onClick={handleLogout} className="nav-button">
               🚪 Logout
             </button>

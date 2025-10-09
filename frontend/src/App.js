@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import Profile from './pages/Profile';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
+import UserManagement from './pages/UserManagement';
 import './App.css';
 
 // Protected Route component
@@ -83,6 +84,14 @@ function App() {
             element={
               <AdminProtectedRoute>
                 <AdminDashboard />
+              </AdminProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/users" 
+            element={
+              <AdminProtectedRoute>
+                <UserManagement />
               </AdminProtectedRoute>
             } 
           />

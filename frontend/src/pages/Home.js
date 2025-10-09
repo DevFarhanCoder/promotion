@@ -9,6 +9,7 @@ const Home = () => {
   const [error, setError] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [promoImages, setPromoImages] = useState([]);
+  const [topIntroducers, setTopIntroducers] = useState([]);
   
   // Calculate dynamic dates
   const currentDate = new Date();
@@ -21,8 +22,9 @@ const Home = () => {
       setUser(JSON.parse(userData));
     }
     
-    // Fetch promotional images
+    // Fetch promotional images and top introducers
     fetchPromoImages();
+    fetchTopIntroducers();
   }, []);
 
   const fetchPromoImages = async () => {
@@ -32,6 +34,16 @@ const Home = () => {
     } catch (err) {
       console.error('Error fetching promotional images:', err);
       setPromoImages([]);
+    }
+  };
+
+  const fetchTopIntroducers = async () => {
+    try {
+      const response = await api.get('/admin/public-top-introducers');
+      setTopIntroducers(response.data.topIntroducers || []);
+    } catch (err) {
+      console.error('Error fetching top introducers:', err);
+      setTopIntroducers([]);
     }
   };
 
@@ -261,6 +273,40 @@ const Home = () => {
           ))
         )}
       </div>
+
+      {/* Top Introducers Section */}
+      {topIntroducers.length > 0 && (
+        <div className="top-introducers-section">
+          <div className="section-header">
+            <h2 className="section-title">🏆 Top Introducers</h2>
+            <p className="section-subtitle">Leading members who are helping grow our community</p>
+          </div>
+          
+          <div className="introducers-ranking">
+            {topIntroducers.map((introducer, index) => (
+              <div key={introducer._id} className={`introducer-card rank-${index + 1}`}>
+                <div className="rank-badge">
+                  <span className="rank-number">#{index + 1}</span>
+                  {index === 0 && <span className="crown">👑</span>}
+                  {index === 1 && <span className="medal">🥈</span>}
+                  {index === 2 && <span className="medal">🥉</span>}
+                </div>
+                
+                <div className="introducer-info">
+                  <div className="introducer-name">{introducer.name}</div>
+                  <div className="introducer-display">@{introducer.displayName}</div>
+                  <div className="introducer-mobile">{introducer.mobile}</div>
+                </div>
+                
+                <div className="referral-stats">
+                  <div className="referral-count">{introducer.count}</div>
+                  <div className="referral-label">referrals</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
     </div>
     </div>

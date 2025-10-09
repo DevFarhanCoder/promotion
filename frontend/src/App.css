@@ -1288,3 +1288,224 @@ body {
     text-align: center;
   }
 }
+
+/* Top Introducers Section */
+.top-introducers-section {
+  margin-top: 3rem;
+  padding: 2rem;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.section-title {
+  font-size: 2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+}
+
+.section-subtitle {
+  color: #666;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.introducers-ranking {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.introducer-card {
+  display: flex;
+  align-items: center;
+  padding: 1.5rem;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.introducer-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.introducer-card.rank-1 {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  border: 3px solid #ffd700;
+}
+
+.introducer-card.rank-2 {
+  background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
+  border: 3px solid #c0c0c0;
+}
+
+.introducer-card.rank-3 {
+  background: linear-gradient(135deg, #cd7f32 0%, #daa520 100%);
+  border: 3px solid #cd7f32;
+}
+
+.rank-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  margin-right: 1.5rem;
+  position: relative;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.rank-number {
+  color: #333;
+  font-weight: 800;
+}
+
+.crown {
+  position: absolute;
+  top: -10px;
+  right: -5px;
+  font-size: 1.5rem;
+}
+
+.medal {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 1.2rem;
+}
+
+.introducer-info {
+  flex: 1;
+  margin-right: 1rem;
+}
+
+.introducer-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.introducer-display {
+  font-size: 1rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+.introducer-mobile {
+  font-size: 0.9rem;
+  color: #888;
+  font-family: monospace;
+  background: rgba(255, 255, 255, 0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.referral-stats {
+  text-align: center;
+  min-width: 80px;
+}
+
+.referral-count {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #333;
+  line-height: 1;
+}
+
+.referral-label {
+  font-size: 0.8rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 0.25rem;
+}
+
+/* Responsive Design for Top Introducers */
+@media (max-width: 768px) {
+  .top-introducers-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+  }
+  
+  .section-title {
+    font-size: 1.5rem;
+  }
+  
+  .introducers-ranking {
+    gap: 1rem;
+  }
+  
+  .introducer-card {
+    padding: 1rem;
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .rank-badge {
+    margin-right: 0;
+    margin-bottom: 1rem;
+    width: 50px;
+    height: 50px;
+  }
+  
+  .introducer-info {
+    margin-right: 0;
+    margin-bottom: 1rem;
+  }
+  
+  .introducer-name {
+    font-size: 1.1rem;
+  }
+  
+  .referral-count {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .introducers-ranking {
+    gap: 0.75rem;
+  }
+  
+  .introducer-card {
+    padding: 0.75rem;
+  }
+  
+  .rank-badge {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+  
+  .introducer-name {
+    font-size: 1rem;
+  }
+  
+  .introducer-display {
+    font-size: 0.9rem;
+  }
+  
+  .introducer-mobile {
+    font-size: 0.8rem;
+  }
+}
