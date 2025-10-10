@@ -130,13 +130,22 @@ const SignUp = () => {
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label className="form-label">Profile Photo (Optional)</label>
-          <input
-            type="file"
-            name="profilePhoto"
-            accept="image/*"
-            onChange={handleChange}
-            className="form-input file-input"
-          />
+          <div className="custom-file-upload">
+            <input
+              type="file"
+              name="profilePhoto"
+              accept="image/*"
+              onChange={handleChange}
+              className="file-input-hidden"
+              id="profilePhotoInput"
+            />
+            <label htmlFor="profilePhotoInput" className="file-upload-button">
+              Upload Photo
+            </label>
+            <span className="file-upload-text">
+              {formData.profilePhoto ? formData.profilePhoto.name : 'No file chosen'}
+            </span>
+          </div>
         </div>
 
         <div className="form-group">
