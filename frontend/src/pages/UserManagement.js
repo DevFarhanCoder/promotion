@@ -191,63 +191,6 @@ const UserManagement = () => {
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
 
-        {/* 6-Level Statistics Cards */}
-        {grandTotals && (
-          <div className="stats-section">
-            <div className="hierarchy-stats-grid">
-              <div className="stat-card total-users">
-                <div className="stat-icon">👥</div>
-                <div className="stat-info">
-                  <div className="stat-number">{totalRootUsers}</div>
-                  <div className="stat-label">Root Users</div>
-                </div>
-              </div>
-              <div className="stat-card level-1">
-                <div className="stat-icon">1️⃣</div>
-                <div className="stat-info">
-                  <div className="stat-number">{grandTotals.level1}</div>
-                  <div className="stat-label">Level 1</div>
-                </div>
-              </div>
-              <div className="stat-card level-2">
-                <div className="stat-icon">2️⃣</div>
-                <div className="stat-info">
-                  <div className="stat-number">{grandTotals.level2}</div>
-                  <div className="stat-label">Level 2</div>
-                </div>
-              </div>
-              <div className="stat-card level-3">
-                <div className="stat-icon">3️⃣</div>
-                <div className="stat-info">
-                  <div className="stat-number">{grandTotals.level3}</div>
-                  <div className="stat-label">Level 3</div>
-                </div>
-              </div>
-              <div className="stat-card level-4">
-                <div className="stat-icon">4️⃣</div>
-                <div className="stat-info">
-                  <div className="stat-number">{grandTotals.level4}</div>
-                  <div className="stat-label">Level 4</div>
-                </div>
-              </div>
-              <div className="stat-card level-5">
-                <div className="stat-icon">5️⃣</div>
-                <div className="stat-info">
-                  <div className="stat-number">{grandTotals.level5}</div>
-                  <div className="stat-label">Level 5</div>
-                </div>
-              </div>
-              <div className="stat-card level-6">
-                <div className="stat-icon">6️⃣</div>
-                <div className="stat-info">
-                  <div className="stat-number">{grandTotals.level6}</div>
-                  <div className="stat-label">Level 6</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Search and Controls */}
         <div className="controls-section">
           <div className="search-container">
@@ -304,7 +247,7 @@ const UserManagement = () => {
                               disabled={levelLoading}
                               title={`View ${branch.level2} users at Level 2 under ${branch.name}`}
                             >
-                              {branch.level2}
+                              View {branch.level2}
                             </button>
                           ) : (
                             <span className="zero-count">0</span>
@@ -318,7 +261,7 @@ const UserManagement = () => {
                               disabled={levelLoading}
                               title={`View ${branch.level3} users at Level 3 under ${branch.name}`}
                             >
-                              {branch.level3}
+                              View {branch.level3}
                             </button>
                           ) : (
                             <span className="zero-count">0</span>
@@ -332,7 +275,7 @@ const UserManagement = () => {
                               disabled={levelLoading}
                               title={`View ${branch.level4} users at Level 4 under ${branch.name}`}
                             >
-                              {branch.level4}
+                              View {branch.level4}
                             </button>
                           ) : (
                             <span className="zero-count">0</span>
@@ -346,7 +289,7 @@ const UserManagement = () => {
                               disabled={levelLoading}
                               title={`View ${branch.level5} users at Level 5 under ${branch.name}`}
                             >
-                              {branch.level5}
+                              View {branch.level5}
                             </button>
                           ) : (
                             <span className="zero-count">0</span>
@@ -360,7 +303,7 @@ const UserManagement = () => {
                               disabled={levelLoading}
                               title={`View ${branch.level6} users at Level 6 under ${branch.name}`}
                             >
-                              {branch.level6}
+                              View {branch.level6}
                             </button>
                           ) : (
                             <span className="zero-count">0</span>
@@ -374,36 +317,6 @@ const UserManagement = () => {
                   ))}
                 
                 </tbody>
-                {grandTotals && (
-                  <tfoot>
-                    <tr className="totals-row">
-                      <td className="totals-label">
-                        <strong>Grand Totals</strong>
-                      </td>
-                      <td className="level-total">
-                        <strong>{grandTotals.level2}</strong>
-                      </td>
-                      <td className="level-total">
-                        <strong>{grandTotals.level3}</strong>
-                      </td>
-                      <td className="level-total">
-                        <strong>{grandTotals.level4}</strong>
-                      </td>
-                      <td className="level-total">
-                        <strong>{grandTotals.level5}</strong>
-                      </td>
-                      <td className="level-total">
-                        <strong>{grandTotals.level6}</strong>
-                      </td>
-                      <td className="grand-total">
-                        <strong>{grandTotals.total}</strong>
-                      </td>
-                      <td className="totals-actions">
-                        <span className="total-users-label">{filteredHierarchicalData.reduce((sum, entry) => sum + entry.branches.length, 0)} Branches</span>
-                      </td>
-                    </tr>
-                  </tfoot>
-                )}
               </table>
             </div>
           )}
@@ -526,43 +439,44 @@ const UserManagement = () => {
         /* Hierarchy Table */
         .hierarchy-section {
           background: white;
-          border: 2px solid #e0e0e0;
-          padding: 30px;
+          padding: 25px;
           margin-bottom: 30px;
         }
 
         .hierarchy-section h2 {
-          margin: 0 0 25px 0;
-          font-size: 1.5rem;
-          font-weight: 700;
-          color: #1f2937;
-          border-bottom: 3px solid #3b82f6;
-          padding-bottom: 12px;
+          margin: 0 0 20px 0;
+          font-size: 1.3rem;
+          font-weight: 600;
+          color: #4a5568;
         }
 
         .hierarchy-table-container {
           overflow-x: auto;
-          border: 2px solid #e0e0e0;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          -webkit-overflow-scrolling: touch;
         }
 
         .hierarchy-table {
           width: 100%;
-          border-collapse: collapse;
+          border-collapse: separate;
+          border-spacing: 0;
           background: white;
           font-size: 0.95rem;
+          min-width: 900px;
         }
 
         .hierarchy-table th {
-          background: #f8fafc;
-          color: #1f2937;
-          padding: 16px 12px;
-          text-align: center;
+          background: #4a5568;
+          color: #ffffff;
+          padding: 16px 20px;
+          text-align: left;
           font-weight: 700;
-          font-size: 0.875rem;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          border-bottom: 2px solid #3b82f6;
-          border-right: 1px solid #e5e7eb;
+          font-size: 1.05rem;
+          text-transform: none;
+          letter-spacing: 0.025em;
+          border-bottom: 1px solid #e2e8f0;
+          white-space: nowrap;
         }
 
         .hierarchy-table th:last-child {
@@ -570,28 +484,27 @@ const UserManagement = () => {
         }
 
         .hierarchy-table th.level-header {
-          min-width: 100px;
+          text-align: center;
+          min-width: 120px;
         }
 
         .hierarchy-table th:first-child {
-          background: #f8fafc;
-          min-width: 280px;
           text-align: left;
-          padding-left: 20px;
+          min-width: 280px;
+          padding-left: 24px;
         }
 
         .hierarchy-table th.total-header {
-          background: #f8fafc;
+          text-align: center;
           min-width: 100px;
-          font-weight: 800;
         }
 
         .hierarchy-table td {
-          padding: 16px 12px;
+          padding: 16px 20px;
           text-align: center;
-          border-bottom: 1px solid #e5e7eb;
-          border-right: 1px solid #f3f4f6;
+          border-bottom: 1px solid #e2e8f0;
           vertical-align: middle;
+          font-size: 0.95rem;
         }
 
         .hierarchy-table td:last-child {
@@ -600,161 +513,115 @@ const UserManagement = () => {
 
         .hierarchy-row {
           background: white;
-          transition: all 0.2s ease;
+          transition: all 0.15s ease;
         }
 
         .hierarchy-row.even {
-          background: #f9fafb;
+          background: #f7fafc;
         }
 
         .hierarchy-row:hover {
-          background: #eff6ff;
-          box-shadow: inset 3px 0 0 #3b82f6;
+          background: #edf2f7;
         }
 
         .hierarchy-row.root-branch {
-          background: #fef3c7;
-          border-left: 4px solid #f59e0b;
+          background: #fffbeb;
         }
 
         .hierarchy-row.root-branch:hover {
-          background: #fde68a;
-          box-shadow: inset 4px 0 0 #f59e0b;
+          background: #fef3c7;
         }
 
         .level-1-cell {
           text-align: left !important;
-          padding: 18px 20px !important;
-          border-right: 2px solid #e5e7eb !important;
+          padding: 16px 24px !important;
         }
 
         .branch-user-info {
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 6px;
         }
 
         .branch-user-name {
-          font-weight: 700;
-          font-size: 1rem;
-          color: #111827;
+          font-weight: 600;
+          font-size: 0.95rem;
+          color: #2d3748;
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 6px;
         }
 
         .root-indicator {
-          font-size: 1.1rem;
+          font-size: 1rem;
         }
 
         .branch-user-meta {
           display: flex;
-          gap: 15px;
+          gap: 12px;
           font-size: 0.875rem;
-          color: #6b7280;
+          color: #718096;
         }
 
         .branch-display {
-          font-weight: 600;
-          color: #3b82f6;
+          font-weight: 500;
+          color: #4a5568;
         }
 
         .branch-mobile {
           font-family: 'Courier New', monospace;
-          color: #6b7280;
-          font-weight: 500;
+          color: #718096;
+          font-weight: 400;
         }
 
         .level-count-cell {
-          padding: 12px !important;
+          padding: 16px 20px !important;
         }
 
         .count-button {
           display: inline-block;
-          padding: 8px 16px;
-          border: 2px solid #3b82f6;
-          background: white;
-          color: #3b82f6;
-          font-weight: 700;
-          font-size: 0.95rem;
+          padding: 8px 20px;
+          border: none;
+          background: #48bb78;
+          color: white;
+          font-weight: 600;
+          font-size: 0.875rem;
           cursor: pointer;
           transition: all 0.2s ease;
-          min-width: 55px;
+          min-width: 90px;
+          border-radius: 5px;
         }
 
         .count-button:hover {
-          background: #3b82f6;
-          color: white;
-          transform: translateY(-2px);
-          box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+          background: #38a169;
+          transform: translateY(-1px);
+          box-shadow: 0 2px 4px rgba(72, 187, 120, 0.3);
         }
 
         .count-button:active {
           transform: translateY(0);
         }
 
+        .count-button:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
         .zero-count {
-          color: #d1d5db;
-          font-size: 0.95rem;
-          font-weight: 600;
+          color: #cbd5e0;
+          font-size: 0.875rem;
+          font-weight: 500;
         }
 
         .total-cell {
-          background: #f0fdf4 !important;
-          border-left: 2px solid #10b981 !important;
+          background: white !important;
           font-weight: 700;
         }
 
         .total-count {
-          display: inline-block;
-          padding: 8px 16px;
-          background: #10b981;
-          color: white;
-          font-weight: 800;
-          font-size: 1.05rem;
-          min-width: 50px;
-        }
-
-        /* Footer Totals */
-        .totals-row {
-          background: #1f2937 !important;
-          color: white;
-          font-weight: 800;
-        }
-
-        .totals-row td {
-          padding: 18px 12px;
-          border-bottom: none;
-          border-top: 3px solid #3b82f6;
-          color: white !important;
-        }
-
-        .totals-label {
-          text-align: left !important;
-          padding-left: 20px !important;
-          font-size: 1.1rem;
-          color: white !important;
-        }
-
-        .level-total {
-          background: #374151 !important;
-          font-size: 1.05rem;
-          color: white !important;
+          color: #2d3748;
           font-weight: 700;
-        }
-
-        .grand-total {
-          background: #10b981 !important;
-          font-size: 1.2rem;
-          font-weight: 900;
-          color: white !important;
-        }
-
-        .total-users-label {
-          color: #d1d5db;
-          font-size: 0.875rem;
-          font-weight: 600;
-          margin-left: 12px;
+          font-size: 1.125rem;
         }
 
         /* Level Modal */
@@ -1328,23 +1195,32 @@ const UserManagement = () => {
           flex: 0 0 350px;
         }
 
+        .controls-section {
+          margin-bottom: 20px;
+        }
+
+        .search-container {
+          max-width: 100%;
+        }
+
         .search-input {
           width: 100%;
-          padding: 14px 18px;
-          border: 2px solid #e0e0e0;
-          font-size: 1rem;
+          padding: 12px 16px;
+          border: 1px solid #e2e8f0;
+          border-radius: 6px;
+          font-size: 0.95rem;
           background: white;
-          transition: all 0.3s ease;
+          transition: all 0.2s ease;
         }
 
         .search-input:focus {
           outline: none;
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+          border-color: #48bb78;
+          box-shadow: 0 0 0 3px rgba(72, 187, 120, 0.1);
         }
 
         .search-input::placeholder {
-          color: #9ca3af;
+          color: #a0aec0;
         }
 
         .total-count {
@@ -1599,35 +1475,130 @@ const UserManagement = () => {
           font-style: italic;
         }
 
+        @media (max-width: 1024px) {
+          .hierarchy-table {
+            min-width: 800px;
+          }
+
+          .hierarchy-table th {
+            font-size: 0.85rem;
+            padding: 12px 16px;
+          }
+
+          .hierarchy-table td {
+            font-size: 0.875rem;
+            padding: 14px 16px;
+          }
+
+          .count-button {
+            padding: 7px 16px;
+            font-size: 0.8125rem;
+            min-width: 80px;
+          }
+        }
+
         @media (max-width: 768px) {
-          .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
+          .user-management {
+            padding: 15px;
           }
-          
-          .controls-section {
-            flex-direction: column;
-            align-items: stretch;
+
+          .hierarchy-section {
+            padding: 15px;
           }
-          
-          .users-table-container {
-            font-size: 0.9rem;
-          }
-          
-          .introducers-grid {
-            grid-template-columns: 1fr;
+
+          .hierarchy-section h2 {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
           }
 
           .hierarchy-table {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
+            min-width: 750px;
           }
 
-          .hierarchy-table th,
-          .hierarchy-table td {
-            min-width: 120px;
+          .hierarchy-table th {
             font-size: 0.8rem;
-            padding: 8px;
+            padding: 12px 12px;
           }
+
+          .hierarchy-table td {
+            font-size: 0.8125rem;
+            padding: 12px 12px;
+          }
+
+          .hierarchy-table th:first-child {
+            min-width: 220px;
+            padding-left: 16px;
+          }
+
+          .branch-user-name {
+            font-size: 0.875rem;
+          }
+
+          .branch-user-meta {
+            font-size: 0.8rem;
+            gap: 10px;
+          }
+
+          .count-button {
+            padding: 6px 14px;
+            font-size: 0.75rem;
+            min-width: 70px;
+          }
+
+          .search-input {
+            font-size: 0.95rem;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .user-management {
+            padding: 10px;
+          }
+
+          .hierarchy-section {
+            padding: 10px;
+          }
+
+          .hierarchy-table {
+            min-width: 700px;
+          }
+
+          .hierarchy-table th {
+            font-size: 0.75rem;
+            padding: 10px 8px;
+          }
+
+          .hierarchy-table td {
+            font-size: 0.75rem;
+            padding: 10px 8px;
+          }
+
+          .hierarchy-table th:first-child {
+            min-width: 200px;
+            padding-left: 12px;
+          }
+
+          .branch-user-name {
+            font-size: 0.8125rem;
+          }
+
+          .branch-user-meta {
+            font-size: 0.75rem;
+            gap: 8px;
+            flex-direction: column;
+          }
+
+          .count-button {
+            padding: 5px 12px;
+            font-size: 0.7rem;
+            min-width: 65px;
+          }
+
+          .search-input {
+            font-size: 0.875rem;
+            padding: 10px 14px;
+          }
+        }
 
           .root-user-info {
             flex-direction: column;

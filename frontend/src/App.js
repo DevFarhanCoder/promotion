@@ -7,6 +7,7 @@ import Profile from './pages/Profile';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import UserManagement from './pages/UserManagement';
+import AllUsersManagement from './pages/AllUsersManagement';
 import './App.css';
 
 // Protected Route component
@@ -92,6 +93,14 @@ function App() {
             element={
               <AdminProtectedRoute>
                 <UserManagement />
+              </AdminProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/all-users" 
+            element={
+              <AdminProtectedRoute>
+                <AllUsersManagement />
               </AdminProtectedRoute>
             } 
           />
