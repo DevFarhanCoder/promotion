@@ -133,7 +133,7 @@ const AdminDashboard = () => {
               👥 All Users
             </button>
             <button onClick={handleLogout} className="nav-button">
-              🚪 Logout
+              Logout
             </button>
           </div>
         </div>
