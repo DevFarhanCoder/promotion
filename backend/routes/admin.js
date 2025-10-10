@@ -309,6 +309,40 @@ router.get('/public-top-introducers', async (req, res) => {
   }
 });
 
+// @route   GET /api/admin/all-users
+// @desc    Get all users for user management page
+// @access  Private (Admin only)
+router.get('/all-users', adminAuth, async (req, res) => {
+  try {
+    const users = await User.find()
+      .populate('introducer', 'name displayName mobile')
+      .sort({ createdAt: -1 })
+      .select('-password');
+
+    // Format users with introducer information
+    const formattedUsers = users.map((user) => ({
+      _id: user._id,
+      name: user.name,
+      displayName: user.displayName,
+      mobile: user.mobile,
+      createdAt: user.createdAt,
+      isActive: user.isActive !== false,
+      introducerName: user.introducer ? (user.introducer.name) : null,
+      introducerMobile: user.introducer ? user.introducer.mobile : null,
+      introducerId: user.introducer ? user.introducer._id : null
+    }));
+
+    res.json({
+      message: 'All users retrieved successfully',
+      users: formattedUsers
+    });
+
+  } catch (error) {
+    console.error('Get all users error:', error);
+    res.status(500).json({ message: 'Error retrieving users' });
+  }
+});
+
 // @route   GET /api/admin/users
 // @desc    Get all users with their basic info
 // @access  Private (Admin only)
