@@ -163,7 +163,7 @@ const Home = () => {
               👤 Profile
             </Link>
             <button onClick={handleLogout} className="nav-button">
-              🚪 Logout
+              Logout
             </button>
           </div>
 
@@ -183,7 +183,7 @@ const Home = () => {
               }} 
               className="nav-button"
             >
-              🚪 Logout
+              Logout
             </button>
           </div>
         </div>

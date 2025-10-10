@@ -122,7 +122,7 @@ const Profile = () => {
               🏠 Home
             </Link>
             <button onClick={handleLogout} className="nav-button">
-              🚪 Logout
+              Logout
             </button>
           </div>
         </div>

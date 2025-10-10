@@ -178,13 +178,13 @@ const AllUsersManagement = () => {
           </div>
           <div className="navbar-nav">
             <button onClick={() => navigate('/admin/dashboard')} className="nav-button">
-              🏠 Dashboard
+              Dashboard
             </button>
             <button onClick={() => navigate('/admin/users')} className="nav-button">
-              📊 Referral Network
+              Referral Network
             </button>
             <button onClick={handleLogout} className="nav-button">
-              🚪 Logout
+              Logout
             </button>
           </div>
         </div>
