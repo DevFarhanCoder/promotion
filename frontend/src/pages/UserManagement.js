@@ -174,14 +174,14 @@ const UserManagement = () => {
       <nav className="modern-navbar">
         <div className="navbar-container">
           <div className="navbar-brand">
-            👥 User Management
+            User Management
           </div>
           <div className="navbar-nav">
             <button onClick={() => navigate('/admin/dashboard')} className="nav-button">
-              🏠 Dashboard
+              Dashboard
             </button>
             <button onClick={handleLogout} className="nav-button">
-              🚪 Logout
+              Logout
             </button>
           </div>
         </div>
