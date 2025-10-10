@@ -91,7 +91,7 @@ const SignUp = () => {
 
       // Create FormData for file upload
       const submitData = new FormData();
-      submitData.append('name', formData.name);
+      submitData.append('name', formData.displayName); // Use displayName as the main name
       submitData.append('mobile', formData.mobile);
       submitData.append('displayName', formData.displayName);
       submitData.append('password', formData.password);
@@ -136,19 +136,6 @@ const SignUp = () => {
             accept="image/*"
             onChange={handleChange}
             className="form-input file-input"
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">Name *</label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            className="form-input"
-            placeholder="Enter your full name"
           />
         </div>
 
