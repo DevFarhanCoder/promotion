@@ -123,14 +123,14 @@ const AdminDashboard = () => {
       <nav className="modern-navbar">
         <div className="navbar-container">
           <div className="navbar-brand">
-            ⚙️ Admin Dashboard
+            Admin Dashboard
           </div>
           <div className="navbar-nav">
             <button onClick={() => navigate('/admin/users')} className="nav-button">
-              � Referral Network
+              Referral Network
             </button>
             <button onClick={() => navigate('/admin/all-users')} className="nav-button">
-              👥 All Users
+              All Users
             </button>
             <button onClick={handleLogout} className="nav-button">
               Logout

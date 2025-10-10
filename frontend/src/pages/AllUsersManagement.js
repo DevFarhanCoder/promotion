@@ -174,7 +174,7 @@ const AllUsersManagement = () => {
       <nav className="modern-navbar">
         <div className="navbar-container">
           <div className="navbar-brand">
-            👥 All Users Management
+            All Users Management
           </div>
           <div className="navbar-nav">
             <button onClick={() => navigate('/admin/dashboard')} className="nav-button">
@@ -240,7 +240,7 @@ const AllUsersManagement = () => {
                 className="bulk-delete-button"
                 disabled={deleteLoading}
               >
-                🗑️ Delete Selected ({selectedUsers.length})
+                Delete Selected ({selectedUsers.length})
               </button>
             )}
           </div>
@@ -311,7 +311,7 @@ const AllUsersManagement = () => {
                           className="delete-button"
                           disabled={deleteLoading}
                         >
-                          🗑️ Delete
+                          Delete
                         </button>
                       </td>
                     </tr>
@@ -327,13 +327,13 @@ const AllUsersManagement = () => {
           <div className="modal-overlay" onClick={() => !deleteLoading && setShowDeleteModal(false)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h3>⚠️ Confirm Delete</h3>
+                <h3>Confirm Delete</h3>
                 <button 
                   className="modal-close"
                   onClick={() => setShowDeleteModal(false)}
                   disabled={deleteLoading}
                 >
-                  ✕
+                  ×
                 </button>
               </div>
               <div className="modal-body">
@@ -725,9 +725,11 @@ const AllUsersManagement = () => {
         }
 
         .warning-list li:before {
-          content: "⚠️";
+          content: "•";
           position: absolute;
           left: 0;
+          font-weight: bold;
+          font-size: 1.2rem;
         }
 
         .modal-footer {
