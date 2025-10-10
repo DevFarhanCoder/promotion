@@ -1826,3 +1826,733 @@ body {
   font-size: 0.95rem;
   margin: 0;
 }
+
+/* Referral Chain Section Styles */
+.referral-chain-section {
+  margin-top: 3rem;
+  padding: 2rem;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.referral-stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stats-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2rem;
+  border-radius: 15px;
+  text-align: center;
+  color: white;
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+}
+
+.stats-number {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  line-height: 1;
+}
+
+.stats-label {
+  font-size: 1rem;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.no-referrals {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.referral-table-container {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+}
+
+.referral-chain-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.referral-chain-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.referral-chain-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: white;
+  border-bottom: 2px solid #e9ecef;
+  white-space: nowrap;
+}
+
+.referral-chain-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #e9ecef;
+  color: #333;
+}
+
+.referral-chain-table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.referral-chain-table tbody tr:hover {
+  background: #f8f9fa;
+}
+
+.referral-chain-table tbody tr.level-1 {
+  border-left: 4px solid #4caf50;
+  background: rgba(76, 175, 80, 0.05);
+}
+
+.referral-chain-table tbody tr.level-2 {
+  border-left: 4px solid #2196f3;
+  background: rgba(33, 150, 243, 0.05);
+}
+
+.referral-chain-table tbody tr.level-3 {
+  border-left: 4px solid #ff9800;
+  background: rgba(255, 152, 0, 0.05);
+}
+
+.referral-chain-table tbody tr.level-4 {
+  border-left: 4px solid #e91e63;
+  background: rgba(233, 30, 99, 0.05);
+}
+
+.referral-chain-table tbody tr.level-5 {
+  border-left: 4px solid #9c27b0;
+  background: rgba(156, 39, 176, 0.05);
+}
+
+.name-cell {
+  font-weight: 600;
+}
+
+.referral-name {
+  font-size: 1rem;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.referral-path {
+  font-size: 0.8rem;
+  color: #666;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.date-cell {
+  color: #718096;
+  font-size: 0.9rem;
+}
+
+.level-cell {
+  text-align: center;
+}
+
+.level-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.level-badge.level-1 {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+.level-badge.level-2 {
+  background: #bee3f8;
+  color: #2a4365;
+}
+
+.level-badge.level-3 {
+  background: #feebc8;
+  color: #7c2d12;
+}
+
+.level-badge.level-4 {
+  background: #fed7e2;
+  color: #702459;
+}
+
+.level-badge.level-5 {
+  background: #e9d8fd;
+  color: #44337a;
+}
+
+/* Responsive Design for Referral Chain */
+@media (max-width: 768px) {
+  .referral-chain-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+  }
+  
+  .referral-stats-cards {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .stats-card {
+    padding: 1.5rem;
+  }
+  
+  .stats-number {
+    font-size: 2.5rem;
+  }
+  
+  .referral-chain-table {
+    font-size: 0.85rem;
+  }
+  
+  .referral-chain-table th,
+  .referral-chain-table td {
+    padding: 0.75rem 0.5rem;
+  }
+  
+  .referral-name {
+    font-size: 0.9rem;
+  }
+  
+  .referral-path {
+    font-size: 0.75rem;
+  }
+}
+
+/* User Search Section Styles */
+.user-search-section {
+  margin-top: 3rem;
+  padding: 2rem;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.search-container {
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.search-input-wrapper {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.network-search-input {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+  border: 2px solid #e9ecef;
+  border-radius: 50px;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.network-search-input:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.clear-search-btn {
+  padding: 0.8rem 1.5rem;
+  background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.clear-search-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(245, 101, 101, 0.3);
+}
+
+.search-loading {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #667eea;
+  font-style: italic;
+}
+
+.search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.5rem;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.search-result-item {
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.search-result-item:hover {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+}
+
+.result-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.result-mobile {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.no-results {
+  padding: 1.5rem;
+  text-align: center;
+  color: #999;
+  font-style: italic;
+}
+
+.network-loading {
+  text-align: center;
+  padding: 2rem;
+  font-size: 1.1rem;
+  color: #667eea;
+}
+
+.user-network-display {
+  margin-top: 2rem;
+}
+
+.selected-user-info {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem 2rem;
+  border-radius: 15px;
+  margin-bottom: 2rem;
+}
+
+.selected-user-info h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.3rem;
+}
+
+.selected-user-info p {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.no-network-data {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+/* Hierarchy Table Styles (shared with UserManagement) */
+.hierarchy-table-container {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+  margin-top: 1rem;
+}
+
+.hierarchy-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  min-width: 1000px;
+}
+
+.hierarchy-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.hierarchy-table th {
+  padding: 1rem;
+  text-align: center;
+  font-weight: 600;
+  color: white;
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.hierarchy-table th:last-child {
+  border-right: none;
+}
+
+.hierarchy-table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.hierarchy-table tbody tr:hover {
+  background: #f8f9fa;
+}
+
+.hierarchy-table tbody tr.even {
+  background: #ffffff;
+}
+
+.hierarchy-table tbody tr.odd {
+  background: #f9fafb;
+}
+
+.hierarchy-table tbody tr.root-branch {
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+  border-left: 4px solid #ffd700;
+}
+
+.level-1-cell {
+  padding: 1rem;
+  border-right: 1px solid #e9ecef;
+  min-width: 250px;
+}
+
+.branch-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.branch-user-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #333;
+}
+
+.root-indicator {
+  font-size: 1.2rem;
+  margin-right: 0.25rem;
+}
+
+.branch-user-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.branch-display {
+  color: #667eea;
+  font-weight: 500;
+}
+
+.branch-mobile {
+  color: #718096;
+}
+
+.level-count-cell {
+  padding: 1rem;
+  text-align: center;
+  border-right: 1px solid #e9ecef;
+}
+
+.count-button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: white;
+}
+
+.level-2-btn {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+}
+
+.level-2-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.level-3-btn {
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+}
+
+.level-3-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+}
+
+.level-4-btn {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+}
+
+.level-4-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+}
+
+.level-5-btn {
+  background: linear-gradient(135deg, #e91e63 0%, #c2185b 100%);
+}
+
+.level-5-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(233, 30, 99, 0.3);
+}
+
+.level-6-btn {
+  background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+}
+
+.level-6-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(156, 39, 176, 0.3);
+}
+
+.count-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.zero-count {
+  color: #cbd5e0;
+  font-weight: 600;
+  font-size: 1.2rem;
+}
+
+.total-cell {
+  padding: 1rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.05);
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  backdrop-filter: blur(5px);
+}
+
+.level-modal-content {
+  background: white;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 1000px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 20px 20px 0 0;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.modal-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+
+.modal-body {
+  padding: 2rem;
+}
+
+.level-users-content {
+  margin-top: 1rem;
+}
+
+.level-info {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.level-info p {
+  margin: 0.5rem 0;
+  font-size: 0.95rem;
+}
+
+.level-users-table-container {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+}
+
+.level-users-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.level-users-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.level-users-table th {
+  padding: 0.8rem;
+  text-align: left;
+  font-weight: 600;
+  color: white;
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.level-users-table th:last-child {
+  border-right: none;
+}
+
+.level-users-table td {
+  padding: 0.8rem;
+  border-bottom: 1px solid #e9ecef;
+  color: #333;
+}
+
+.level-users-table tbody tr:hover {
+  background: #f8f9fa;
+}
+
+/* Responsive Design for User Search */
+@media (max-width: 768px) {
+  .user-search-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+  }
+
+  .search-input-wrapper {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .network-search-input {
+    padding: 0.8rem 1.2rem;
+    font-size: 0.9rem;
+  }
+
+  .clear-search-btn {
+    width: 100%;
+    padding: 0.8rem;
+  }
+
+  .selected-user-info {
+    padding: 1rem 1.5rem;
+  }
+
+  .selected-user-info h3 {
+    font-size: 1.1rem;
+  }
+
+  .hierarchy-table {
+    font-size: 0.75rem;
+    min-width: 800px;
+  }
+
+  .hierarchy-table th,
+  .hierarchy-table td {
+    padding: 0.6rem 0.4rem;
+  }
+
+  .branch-user-name {
+    font-size: 0.85rem;
+  }
+
+  .branch-user-meta {
+    font-size: 0.75rem;
+  }
+
+  .count-button {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.75rem;
+  }
+
+  .level-modal-content {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .modal-header {
+    padding: 1rem 1.5rem;
+  }
+
+  .modal-header h3 {
+    font-size: 1rem;
+  }
+
+  .modal-body {
+    padding: 1rem;
+  }
+
+  .level-users-table {
+    font-size: 0.75rem;
+  }
+
+  .level-users-table th,
+  .level-users-table td {
+    padding: 0.6rem 0.4rem;
+  }
+}
