@@ -2705,7 +2705,28 @@ body {
 }
 
 .ranking-table tbody tr.silver-row {
-  background: linear-gradient(90deg, rgba(211, 211, 211, 0.5) 0%, rgba(192, 192, 192, 0.5) 100%);
+  background: linear-gradient(135deg, 
+    #e8e8e8 0%, 
+    #c0c0c0 16%, 
+    #d3d3d3 33%, 
+    #b8b8b8 50%, 
+    #d3d3d3 66%, 
+    #c0c0c0 84%, 
+    #e8e8e8 100%);
+  background-size: 200% 100%;
+  animation: silverShine 3s infinite;
+}
+
+@keyframes silverShine {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .ranking-table tbody tr.bronze-row {
