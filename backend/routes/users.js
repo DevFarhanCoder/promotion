@@ -354,6 +354,9 @@ router.get('/level-users/:branchUserId/:level', auth, async (req, res) => {
     let currentLevelIds = [branchUserId];
 
     // Navigate through levels to reach the target level
+    // For level 2: i=1 (one iteration, get direct referrals of branch user)
+    // For level 3: i=1,2 (two iterations)
+    // For level 4: i=1,2,3 (three iterations)
     for (let i = 1; i < levelNum; i++) {
       const nextLevelUsers = await User.find({
         introducer: { $in: currentLevelIds }
@@ -367,7 +370,7 @@ router.get('/level-users/:branchUserId/:level', auth, async (req, res) => {
     // Get full user details at the target level
     if (currentLevelIds.length > 0) {
       users = await User.find({
-        introducer: { $in: currentLevelIds }
+        _id: { $in: currentLevelIds }
       }).select('name displayName mobile createdAt introducerName')
         .populate('introducer', 'name displayName mobile')
         .sort({ createdAt: -1 });
@@ -389,6 +392,85 @@ router.get('/level-users/:branchUserId/:level', auth, async (req, res) => {
   } catch (error) {
     console.error('Get level users error:', error);
     res.status(500).json({ message: 'Server error fetching level users' });
+  }
+});
+
+// @route   GET /api/users/ranking
+// @desc    Get top users ranking by total referrals with pagination
+// @access  Private
+router.get('/ranking', auth, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Helper function to calculate total referrals for a user (all 6 levels)
+    const calculateTotalReferrals = async (userId) => {
+      let total = 0;
+      let currentLevelIds = [userId];
+
+      // Iterate through 6 levels
+      for (let level = 1; level <= 6; level++) {
+        const nextLevelUsers = await User.find({
+          introducer: { $in: currentLevelIds }
+        }).select('_id');
+        
+        total += nextLevelUsers.length;
+        currentLevelIds = nextLevelUsers.map(u => u._id);
+        
+        if (currentLevelIds.length === 0) break;
+      }
+
+      return total;
+    };
+
+    // Get all users
+    const allUsers = await User.find({}).select('_id name displayName mobile createdAt');
+
+    // Calculate total referrals for each user
+    const usersWithReferrals = await Promise.all(
+      allUsers.map(async (user) => {
+        const totalReferrals = await calculateTotalReferrals(user._id);
+        return {
+          _id: user._id,
+          name: user.name,
+          displayName: user.displayName,
+          mobile: user.mobile,
+          createdAt: user.createdAt,
+          totalReferrals
+        };
+      })
+    );
+
+    // Sort by total referrals (descending)
+    usersWithReferrals.sort((a, b) => b.totalReferrals - a.totalReferrals);
+
+    // Add ranking
+    const rankedUsers = usersWithReferrals.map((user, index) => ({
+      ...user,
+      rank: index + 1
+    }));
+
+    // Paginate
+    const paginatedUsers = rankedUsers.slice(skip, skip + limit);
+    const totalUsers = rankedUsers.length;
+    const totalPages = Math.ceil(totalUsers / limit);
+
+    res.json({
+      users: paginatedUsers,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalUsers,
+        limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
+    });
+
+  } catch (error) {
+    console.error('Get ranking error:', error);
+    res.status(500).json({ message: 'Server error fetching ranking' });
   }
 });
 
