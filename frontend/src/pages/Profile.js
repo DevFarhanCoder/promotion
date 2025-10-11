@@ -121,6 +121,9 @@ const Profile = () => {
             <Link to="/home" className="nav-link">
               🏠 Home
             </Link>
+            <Link to="/my-referrals" className="nav-link">
+              👥 My Referrals
+            </Link>
             <button onClick={handleLogout} className="nav-button">
               Logout
             </button>

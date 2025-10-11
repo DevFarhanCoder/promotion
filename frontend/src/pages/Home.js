@@ -9,20 +9,24 @@ const Home = () => {
   const [error, setError] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [promoImages, setPromoImages] = useState([]);
-  const [referralChain, setReferralChain] = useState([]);
-  const [referralStats, setReferralStats] = useState({
-    totalReferrals: 0,
-    directReferrals: 0
+
+  // Ranking Table States
+  const [rankingData, setRankingData] = useState([]);
+  const [rankingLoading, setRankingLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalUsers: 0,
+    hasNextPage: false,
+    hasPrevPage: false
   });
 
-  // Dynamic User Search States
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  // Network Modal States
   const [selectedUser, setSelectedUser] = useState(null);
   const [userNetwork, setUserNetwork] = useState([]);
   const [networkLoading, setNetworkLoading] = useState(false);
+  const [showNetworkModal, setShowNetworkModal] = useState(false);
   const [selectedLevel, setSelectedLevel] = useState(null);
   const [levelUsers, setLevelUsers] = useState([]);
   const [showLevelModal, setShowLevelModal] = useState(false);
@@ -34,13 +38,15 @@ const Home = () => {
     if (userData) {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
-      // Fetch the logged-in user's network initially
-      fetchUserNetwork(parsedUser.id);
+      // Don't fetch logged-in user's network on Home page
+      // User's network is now on My Referrals page
     }
     
-    // Fetch promotional images and referral chain
+    // Fetch promotional images
     fetchPromoImages();
-    fetchReferralChain();
+    
+    // Fetch ranking data
+    fetchRankingData(1);
   }, []);
 
   const fetchPromoImages = async () => {
@@ -53,59 +59,48 @@ const Home = () => {
     }
   };
 
-  const fetchReferralChain = async () => {
+  // Fetch ranking data
+  const fetchRankingData = async (page = 1) => {
+    setRankingLoading(true);
     try {
-      const response = await api.get('/users/my-referral-chain');
-      setReferralChain(response.data.referralChain || []);
-      setReferralStats({
-        totalReferrals: response.data.stats?.totalReferrals || 0,
-        directReferrals: response.data.stats?.directReferrals || 0
-      });
+      const response = await api.get(`/users/ranking?page=${page}&limit=10`);
+      setRankingData(response.data.users || []);
+      setPagination(response.data.pagination || {});
+      setCurrentPage(page);
     } catch (err) {
-      console.error('Error fetching referral chain:', err);
-      setReferralChain([]);
-    }
-  };
-
-  // Search for users
-  const handleSearchUsers = async (query) => {
-    setSearchQuery(query);
-    
-    if (query.length < 2) {
-      setSearchResults([]);
-      setShowSearchDropdown(false);
-      return;
-    }
-
-    setSearchLoading(true);
-    try {
-      const response = await api.get(`/users/search-all?query=${query}`);
-      setSearchResults(response.data.users || []);
-      setShowSearchDropdown(true);
-    } catch (err) {
-      console.error('Search error:', err);
-      setSearchResults([]);
+      console.error('Error fetching ranking data:', err);
+      setRankingData([]);
+      setError('Failed to fetch ranking data');
     } finally {
-      setSearchLoading(false);
+      setRankingLoading(false);
     }
   };
 
-  // Select a user and fetch their network
-  const selectUser = async (user) => {
-    setSelectedUser(user);
-    setSearchQuery(`${user.displayName || user.name} (${user.mobile})`);
-    setShowSearchDropdown(false);
-    setSearchResults([]);
-    
-    // Fetch the user's referral network
-    await fetchUserNetwork(user._id);
+  // Pagination handlers
+  const handleNextPage = () => {
+    if (pagination.hasNextPage) {
+      fetchRankingData(currentPage + 1);
+    }
   };
 
-  // Fetch referral network for selected user
-  const fetchUserNetwork = async (userId) => {
+  const handlePrevPage = () => {
+    if (pagination.hasPrevPage) {
+      fetchRankingData(currentPage - 1);
+    }
+  };
+
+  const handlePageClick = (pageNum) => {
+    fetchRankingData(pageNum);
+  };
+
+  // Fetch user's referral network when clicking on total referrals
+  const handleViewUserNetwork = async (user) => {
+    setSelectedUser(user);
     setNetworkLoading(true);
+    setShowNetworkModal(true);
+    
     try {
-      const response = await api.get(`/users/referral-network/${userId}`);
+      const response = await api.get(`/users/referral-network/${user._id}`);
       setUserNetwork(response.data.branches || []);
     } catch (err) {
       console.error('Error fetching user network:', err);
@@ -139,16 +134,6 @@ const Home = () => {
       setError(err.response?.data?.message || 'Failed to fetch level users');
     } finally {
       setLevelLoading(false);
-    }
-  };
-
-  // Clear selected user
-  const clearUserSelection = () => {
-    setSelectedUser(null);
-    setSearchQuery('');
-    // Reload logged-in user's network
-    if (user?.id) {
-      fetchUserNetwork(user.id);
     }
   };
 
@@ -264,6 +249,9 @@ const Home = () => {
 
           {/* Desktop Navigation */}
           <div className="navbar-nav desktop-nav">
+            <Link to="/my-referrals" className="nav-link">
+              👥 My Referrals
+            </Link>
             <Link to="/profile" className="nav-link">
               👤 Profile
             </Link>
@@ -274,6 +262,13 @@ const Home = () => {
 
           {/* Mobile Navigation */}
           <div className={`mobile-nav ${mobileMenuOpen ? 'active' : ''}`}>
+            <Link 
+              to="/my-referrals" 
+              className="nav-link"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              👥 My Referrals
+            </Link>
             <Link 
               to="/profile" 
               className="nav-link"
@@ -297,7 +292,7 @@ const Home = () => {
       <div className="home-container">
         <div className="welcome-card">
           <div className="welcome-content">
-            <h1 className="welcome-title">Welcome back, {user.displayName}! 👋</h1>
+            <h1 className="welcome-title">Welcome back, {user.displayName}!</h1>
             <p className="welcome-subtitle">Download your personalized promotional images</p>
           </div>
         </div>
@@ -378,264 +373,271 @@ const Home = () => {
         )}
       </div>
 
-      {/* Referral Chain Section */}
-      <div className="referral-chain-section">
-        <div className="section-header">
-          <h2 className="section-title">My Referral Network</h2>
-          <p className="section-subtitle">People who joined through your referral</p>
-        </div>
-
-        {/* Referral Stats */}
-        <div className="referral-stats-cards">
-          <div className="stats-card">
-            <div className="stats-number">{referralStats.directReferrals}</div>
-            <div className="stats-label">Direct Referrals</div>
-          </div>
-          <div className="stats-card">
-            <div className="stats-number">{referralStats.totalReferrals}</div>
-            <div className="stats-label">Total Network</div>
-          </div>
-        </div>
-
-        {/* Referral Chain Table */}
-        {referralChain.length === 0 ? (
-          <div className="no-referrals">
-            <p>You haven't referred anyone yet. Share your referral link to grow your network!</p>
-          </div>
-        ) : (
-          <div className="referral-table-container">
-            <table className="referral-chain-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Name</th>
-                  <th>Joined Date</th>
-                  <th>Level</th>
-                </tr>
-              </thead>
-              <tbody>
-                {referralChain.map((referral, index) => (
-                  <tr key={referral._id} className={`level-${referral.level}`}>
-                    <td>{index + 1}</td>
-                    <td className="name-cell">
-                      <div className="referral-name">{referral.name}</div>
-                      {referral.level > 1 && (
-                        <div className="referral-path">via {referral.introducerName}</div>
-                      )}
-                    </td>
-                    <td className="date-cell">
-                      {new Date(referral.joinedDate).toLocaleDateString('en-US', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric'
-                      })}
-                    </td>
-                    <td className="level-cell">
-                      <span className={`level-badge level-${referral.level}`}>
-                        Level {referral.level}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
       {/* Dynamic User Search & Network Section */}
       <div className="user-search-section">
         <div className="section-header">
-          <h2 className="section-title">Search User Network</h2>
-          <p className="section-subtitle">View any user's referral network structure</p>
-        </div>
-
-        {/* Search Bar */}
-        <div className="search-container" style={{ position: 'relative', marginBottom: '2rem' }}>
-          <div className="search-input-wrapper">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => handleSearchUsers(e.target.value)}
-              placeholder="Search by name or phone number..."
-              className="network-search-input"
-              autoComplete="off"
-            />
-            {selectedUser && (
-              <button onClick={clearUserSelection} className="clear-search-btn">
-                ✕ Clear
-              </button>
-            )}
+          <div style={{ textAlign: 'center', width: '100%' }}>
+            <h2 className="section-title">Top Users Ranking</h2>
+            <p className="section-subtitle">Users ranked by total number of referrals across the platform</p>
           </div>
-
-          {/* Search Loading */}
-          {searchLoading && (
-            <div className="search-loading">Searching...</div>
-          )}
-
-          {/* Search Results Dropdown */}
-          {showSearchDropdown && searchResults.length > 0 && (
-            <div className="search-dropdown">
-              {searchResults.map(user => (
-                <div
-                  key={user._id}
-                  onClick={() => selectUser(user)}
-                  className="search-result-item"
-                >
-                  <div className="result-name">{user.displayName || user.name}</div>
-                  <div className="result-mobile">{user.mobile}</div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* No Results */}
-          {showSearchDropdown && searchResults.length === 0 && searchQuery.length >= 2 && !searchLoading && (
-            <div className="search-dropdown">
-              <div className="no-results">No users found</div>
-            </div>
-          )}
         </div>
 
-        {/* Network Loading */}
-        {networkLoading && (
-          <div className="network-loading">Loading network data...</div>
-        )}
-
-        {/* Network Table - Always visible, shows logged-in user's network by default */}
-        {!networkLoading && userNetwork.length > 0 && (
-          <div className="user-network-display">
-            <div className="selected-user-info">
-              <h3>
-                Network for: <strong>{selectedUser ? (selectedUser.displayName || selectedUser.name) : (user?.displayName || user?.name || 'You')}</strong>
-              </h3>
-              <p>Mobile: {selectedUser ? selectedUser.mobile : (user?.mobile || 'N/A')}</p>
-              {selectedUser && (
-                <p style={{ fontSize: '0.9rem', marginTop: '0.5rem', opacity: 0.9 }}>
-                  Viewing selected user's network
-                </p>
-              )}
-              {!selectedUser && (
-                <p style={{ fontSize: '0.9rem', marginTop: '0.5rem', opacity: 0.9 }}>
-                  Your network (search to view another user's network)
-                </p>
-              )}
-            </div>
-
-            <div className="hierarchy-table-container">
-              <table className="hierarchy-table">
+        {/* Ranking Table */}
+        {rankingLoading ? (
+          <div className="network-loading">Loading ranking data...</div>
+        ) : (
+          <>
+            <div className="ranking-table-container">
+              <table className="ranking-table">
                 <thead>
                   <tr>
-                    <th className="level-header">Level 1 (User + Phone)</th>
-                    <th className="level-header">Level 2</th>
-                    <th className="level-header">Level 3</th>
-                    <th className="level-header">Level 4</th>
-                    <th className="level-header">Level 5</th>
-                    <th className="level-header">Level 6</th>
-                    <th className="total-header">Total</th>
+                    <th className="rank-header">Rank</th>
+                    <th className="name-header">Name</th>
+                    <th className="badge-header">Badge</th>
+                    <th className="referrals-header">Total Referrals</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {userNetwork.map((branch, branchIndex) => (
-                    <tr 
-                      key={`${branch.id}-${branchIndex}`} 
-                      className={`hierarchy-row ${branchIndex % 2 === 0 ? 'even' : 'odd'} ${branch.isRoot ? 'root-branch' : 'user-branch'}`}
-                    >
-                      <td className="level-1-cell">
-                        <div className="branch-user-info">
-                          <div className="branch-user-name">
-                            {branch.isRoot && <span className="root-indicator">👑 </span>}
-                            {branch.name}
+                  {rankingData.map((user, index) => {
+                    const rowClass = user.rank === 1 ? 'gold-row' : 
+                                    user.rank === 2 ? 'silver-row' : 
+                                    user.rank === 3 ? 'bronze-row' : 
+                                    (index % 2 === 0 ? 'even-row' : 'odd-row');
+                    
+                    return (
+                      <tr key={user._id} className={rowClass}>
+                        <td className="rank-cell">
+                          <span className="rank-number">
+                            {user.rank}
+                          </span>
+                        </td>
+                        <td className="name-cell">
+                          <div className="user-info">
+                            <div className="user-name">{user.displayName || user.name}</div>
                           </div>
-                          <div className="branch-user-meta">
-                            <span className="branch-display">@{branch.displayName}</span>
-                            <span className="branch-mobile">{branch.mobile}</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="level-count-cell level-2">
-                        {branch.level2 > 0 ? (
+                        </td>
+                        <td className="badge-cell">
+                          {user.rank === 1 ? (
+                            <div className="rank-badge-tag gold-badge">
+                              <span className="badge-icon">👑</span>
+                              <span className="badge-label">Gold</span>
+                            </div>
+                          ) : user.rank === 2 ? (
+                            <div className="rank-badge-tag silver-badge">
+                              <span className="badge-icon">🥈</span>
+                              <span className="badge-label">Silver</span>
+                            </div>
+                          ) : user.rank === 3 ? (
+                            <div className="rank-badge-tag bronze-badge">
+                              <span className="badge-icon">🥉</span>
+                              <span className="badge-label">Bronze</span>
+                            </div>
+                          ) : null}
+                        </td>
+                        <td className="referrals-cell">
                           <button
-                            className="count-button level-2-btn"
-                            onClick={() => fetchLevelUsers(branch.id, 2, branch.name)}
-                            disabled={levelLoading}
+                            className="referrals-count clickable"
+                            onClick={() => handleViewUserNetwork(user)}
+                            title="Click to view referral network"
                           >
-                            View {branch.level2}
+                            {user.totalReferrals}
                           </button>
-                        ) : (
-                          <span className="zero-count">0</span>
-                        )}
-                      </td>
-                      <td className="level-count-cell level-3">
-                        {branch.level3 > 0 ? (
-                          <button
-                            className="count-button level-3-btn"
-                            onClick={() => fetchLevelUsers(branch.id, 3, branch.name)}
-                            disabled={levelLoading}
-                          >
-                            View {branch.level3}
-                          </button>
-                        ) : (
-                          <span className="zero-count">0</span>
-                        )}
-                      </td>
-                      <td className="level-count-cell level-4">
-                        {branch.level4 > 0 ? (
-                          <button
-                            className="count-button level-4-btn"
-                            onClick={() => fetchLevelUsers(branch.id, 4, branch.name)}
-                            disabled={levelLoading}
-                          >
-                            View {branch.level4}
-                          </button>
-                        ) : (
-                          <span className="zero-count">0</span>
-                        )}
-                      </td>
-                      <td className="level-count-cell level-5">
-                        {branch.level5 > 0 ? (
-                          <button
-                            className="count-button level-5-btn"
-                            onClick={() => fetchLevelUsers(branch.id, 5, branch.name)}
-                            disabled={levelLoading}
-                          >
-                            View {branch.level5}
-                          </button>
-                        ) : (
-                          <span className="zero-count">0</span>
-                        )}
-                      </td>
-                      <td className="level-count-cell level-6">
-                        {branch.level6 > 0 ? (
-                          <button
-                            className="count-button level-6-btn"
-                            onClick={() => fetchLevelUsers(branch.id, 6, branch.name)}
-                            disabled={levelLoading}
-                          >
-                            View {branch.level6}
-                          </button>
-                        ) : (
-                          <span className="zero-count">0</span>
-                        )}
-                      </td>
-                      <td className="total-cell">
-                        <span className="total-count">{branch.totalUsers}</span>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
-          </div>
-        )}
 
-        {/* No Network Data */}
-        {!networkLoading && userNetwork.length === 0 && (
-          <div className="no-network-data">
-            <p>{selectedUser ? 'This user has no referral network yet.' : 'You have no referral network yet.'}</p>
-          </div>
+            {/* Pagination */}
+            {pagination.totalPages > 1 && (
+              <div className="pagination-container">
+                <button
+                  className="pagination-btn"
+                  onClick={handlePrevPage}
+                  disabled={!pagination.hasPrevPage}
+                >
+                  ← Previous
+                </button>
+
+                <div className="pagination-pages">
+                  {[...Array(pagination.totalPages)].map((_, index) => {
+                    const pageNum = index + 1;
+                    // Show first 3 pages, current page with neighbors, and last 3 pages
+                    if (
+                      pageNum <= 3 ||
+                      pageNum >= pagination.totalPages - 2 ||
+                      (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                    ) {
+                      return (
+                        <button
+                          key={pageNum}
+                          className={`pagination-page ${currentPage === pageNum ? 'active' : ''}`}
+                          onClick={() => handlePageClick(pageNum)}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    } else if (
+                      pageNum === 4 && currentPage > 5 ||
+                      pageNum === pagination.totalPages - 3 && currentPage < pagination.totalPages - 4
+                    ) {
+                      return <span key={pageNum} className="pagination-ellipsis">...</span>;
+                    }
+                    return null;
+                  })}
+                </div>
+
+                <button
+                  className="pagination-btn"
+                  onClick={handleNextPage}
+                  disabled={!pagination.hasNextPage}
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+
+            {/* Pagination Info */}
+            <div className="pagination-info">
+              Showing {rankingData.length > 0 ? ((currentPage - 1) * 10) + 1 : 0} - {Math.min(currentPage * 10, pagination.totalUsers)} of {pagination.totalUsers} users
+            </div>
+          </>
         )}
       </div>
+
+      {/* User Network Modal */}
+      {showNetworkModal && selectedUser && (
+        <div className="modal-overlay" onClick={() => setShowNetworkModal(false)}>
+          <div className="network-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>
+                {selectedUser.displayName || selectedUser.name}'s Referral Network
+              </h3>
+              <button 
+                className="modal-close"
+                onClick={() => setShowNetworkModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              {networkLoading ? (
+                <div className="loading">Loading network data...</div>
+              ) : (
+                <div className="network-content">
+                  {userNetwork.length > 0 ? (
+                    <div className="hierarchy-table-container">
+                      <table className="hierarchy-table">
+                        <thead>
+                          <tr>
+                            <th className="level-header">Level 1 (User)</th>
+                            <th className="level-header">Level 2</th>
+                            <th className="level-header">Level 3</th>
+                            <th className="level-header">Level 4</th>
+                            <th className="level-header">Level 5</th>
+                            <th className="level-header">Level 6</th>
+                            <th className="total-header">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {userNetwork.map((branch, branchIndex) => (
+                            <tr 
+                              key={`${branch.id}-${branchIndex}`} 
+                              className={`hierarchy-row ${branchIndex % 2 === 0 ? 'even' : 'odd'} ${branch.isRoot ? 'root-branch' : 'user-branch'}`}
+                            >
+                              <td className="level-1-cell">
+                                <div className="branch-user-info">
+                                  <div className="branch-user-name">
+                                    {branch.isRoot && <span className="root-indicator">👑 </span>}
+                                    {branch.displayName || branch.name}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="level-count-cell level-2">
+                                {branch.level2 > 0 ? (
+                                  <button
+                                    className="count-button level-2-btn"
+                                    onClick={() => fetchLevelUsers(branch.id, 2, branch.name)}
+                                    disabled={levelLoading}
+                                  >
+                                    View {branch.level2}
+                                  </button>
+                                ) : (
+                                  <span className="zero-count">0</span>
+                                )}
+                              </td>
+                              <td className="level-count-cell level-3">
+                                {branch.level3 > 0 ? (
+                                  <button
+                                    className="count-button level-3-btn"
+                                    onClick={() => fetchLevelUsers(branch.id, 3, branch.name)}
+                                    disabled={levelLoading}
+                                  >
+                                    View {branch.level3}
+                                  </button>
+                                ) : (
+                                  <span className="zero-count">0</span>
+                                )}
+                              </td>
+                              <td className="level-count-cell level-4">
+                                {branch.level4 > 0 ? (
+                                  <button
+                                    className="count-button level-4-btn"
+                                    onClick={() => fetchLevelUsers(branch.id, 4, branch.name)}
+                                    disabled={levelLoading}
+                                  >
+                                    View {branch.level4}
+                                  </button>
+                                ) : (
+                                  <span className="zero-count">0</span>
+                                )}
+                              </td>
+                              <td className="level-count-cell level-5">
+                                {branch.level5 > 0 ? (
+                                  <button
+                                    className="count-button level-5-btn"
+                                    onClick={() => fetchLevelUsers(branch.id, 5, branch.name)}
+                                    disabled={levelLoading}
+                                  >
+                                    View {branch.level5}
+                                  </button>
+                                ) : (
+                                  <span className="zero-count">0</span>
+                                )}
+                              </td>
+                              <td className="level-count-cell level-6">
+                                {branch.level6 > 0 ? (
+                                  <button
+                                    className="count-button level-6-btn"
+                                    onClick={() => fetchLevelUsers(branch.id, 6, branch.name)}
+                                    disabled={levelLoading}
+                                  >
+                                    View {branch.level6}
+                                  </button>
+                                ) : (
+                                  <span className="zero-count">0</span>
+                                )}
+                              </td>
+                              <td className="total-cell">
+                                <span className="total-count">{branch.totalUsers}</span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p>This user has no referral network yet.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Level Users Modal */}
       {showLevelModal && selectedLevel && (
@@ -669,8 +671,6 @@ const Home = () => {
                           <tr>
                             <th>#</th>
                             <th>Name</th>
-                            <th>Display Name</th>
-                            <th>Mobile</th>
                             <th>Joined Date</th>
                             <th>Introducer</th>
                           </tr>
@@ -679,9 +679,9 @@ const Home = () => {
                           {levelUsers.map((user, index) => (
                             <tr key={user._id}>
                               <td>{index + 1}</td>
-                              <td>{user.name}</td>
-                              <td>{user.displayName}</td>
-                              <td>{user.mobile}</td>
+                              <td>
+                                {user.displayName || user.name}
+                              </td>
                               <td>
                                 {new Date(user.createdAt).toLocaleDateString('en-US', {
                                   day: 'numeric',

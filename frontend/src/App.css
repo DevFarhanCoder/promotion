@@ -2050,6 +2050,35 @@ body {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
+.top-ranking-btn {
+  padding: 0.8rem 1.8rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  white-space: nowrap;
+}
+
+.top-ranking-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.top-ranking-btn:active {
+  transform: translateY(-1px);
+}
+
+.top-ranking-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .search-container {
   position: relative;
   margin-bottom: 2rem;
@@ -2484,6 +2513,18 @@ body {
     padding: 1.5rem;
   }
 
+  .section-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem;
+  }
+
+  .top-ranking-btn {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    font-size: 0.9rem;
+  }
+
   .search-input-wrapper {
     flex-direction: column;
     gap: 0.5rem;
@@ -2554,5 +2595,527 @@ body {
   .level-users-table th,
   .level-users-table td {
     padding: 0.6rem 0.4rem;
+  }
+}
+
+/* Ranking Table Styles */
+.ranking-table-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  margin: 2rem auto;
+  max-width: 750px;
+  position: relative;
+}
+
+.ranking-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ranking-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.ranking-table th {
+  padding: 1rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.rank-header {
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+  text-align: center;
+}
+
+.name-header {
+  width: 250px;
+  min-width: 250px;
+  max-width: 250px;
+  text-align: left;
+  padding-left: 1.5rem;
+}
+
+.badge-header {
+  width: 140px;
+  min-width: 140px;
+  max-width: 140px;
+  text-align: center;
+}
+
+.referrals-header {
+  width: 180px;
+  min-width: 180px;
+  max-width: 180px;
+  text-align: center;
+}
+
+.ranking-table tbody tr {
+  border-bottom: 1px solid #f0f0f0;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.ranking-table tbody tr:hover {
+  background: linear-gradient(90deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  transform: scale(1.01);
+}
+
+.ranking-table tbody tr.even-row {
+  background: #fafafa;
+}
+
+.ranking-table tbody tr.odd-row {
+  background: white;
+}
+
+.ranking-table tbody tr.gold-row {
+  background: linear-gradient(135deg, 
+    #f3e27a 0%, 
+    #f4d03f 16%, 
+    #f9e79f 33%, 
+    #ffd700 50%, 
+    #f9e79f 66%, 
+    #f4d03f 84%, 
+    #f3e27a 100%);
+  background-size: 200% 100%;
+  animation: goldShine 3s infinite;
+}
+
+@keyframes goldShine {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.ranking-table tbody tr.silver-row {
+  background: linear-gradient(90deg, rgba(211, 211, 211, 0.5) 0%, rgba(192, 192, 192, 0.5) 100%);
+}
+
+.ranking-table tbody tr.bronze-row {
+  background: linear-gradient(90deg, rgba(205, 127, 50, 0.35) 0%, rgba(184, 115, 51, 0.35) 100%);
+}
+
+.ranking-table tbody tr:hover {
+  background: linear-gradient(90deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%);
+}
+
+.rank-cell {
+  padding: 0.8rem 1rem;
+  text-align: center;
+  vertical-align: middle;
+  overflow: hidden;
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+  display: table-cell;
+}
+
+.rank-number {
+  display: inline-block;
+  font-weight: 800;
+  font-size: 1.3rem;
+  color: #667eea;
+  min-width: 30px;
+}
+
+.badge-cell {
+  padding: 0.8rem 1rem;
+  text-align: center;
+  vertical-align: middle;
+  overflow: hidden;
+  width: 140px;
+  min-width: 140px;
+  max-width: 140px;
+  display: table-cell;
+}
+
+.rank-badge-tag {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.8rem;
+  border-radius: 8px;
+  background: transparent;
+  min-width: 80px;
+}
+
+.rank-badge-tag .badge-icon {
+  font-size: 1.8rem;
+  margin-bottom: 0.2rem;
+  display: block;
+}
+
+.rank-badge-tag .badge-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.gold-badge .badge-icon {
+  filter: drop-shadow(0 2px 4px rgba(255, 215, 0, 0.5));
+}
+
+.gold-badge .badge-label {
+  color: #B8860B;
+}
+
+.silver-badge .badge-icon {
+  filter: drop-shadow(0 2px 4px rgba(192, 192, 192, 0.5));
+}
+
+.silver-badge .badge-label {
+  color: #6B6B6B;
+}
+
+.bronze-badge .badge-icon {
+  filter: drop-shadow(0 2px 4px rgba(205, 127, 50, 0.5));
+}
+
+.bronze-badge .badge-label {
+  color: #8B4513;
+}
+
+.no-badge {
+  color: #999;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.rank-badge {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  min-width: 50px;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.rank-badge.top-1 {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.5);
+  font-size: 2.5rem;
+  padding: 0.3rem 0.8rem;
+  animation: pulse 2s infinite;
+}
+
+.rank-badge.top-2 {
+  background: linear-gradient(135deg, #C0C0C0, #A9A9A9);
+  box-shadow: 0 4px 20px rgba(192, 192, 192, 0.5);
+  font-size: 2.2rem;
+  padding: 0.3rem 0.7rem;
+}
+
+.rank-badge.top-3 {
+  background: linear-gradient(135deg, #CD7F32, #B87333);
+  box-shadow: 0 4px 20px rgba(205, 127, 50, 0.5);
+  font-size: 2rem;
+  padding: 0.3rem 0.65rem;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.name-cell {
+  padding: 0.8rem 1rem 0.8rem 1.5rem;
+  vertical-align: middle;
+  overflow: hidden;
+  width: 250px;
+  min-width: 250px;
+  max-width: 250px;
+  display: table-cell;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  text-align: left;
+  overflow: hidden;
+}
+
+.user-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-mobile {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.referrals-cell {
+  padding: 0.8rem 1rem;
+  text-align: center;
+  vertical-align: middle;
+  overflow: hidden;
+  width: 180px;
+  min-width: 180px;
+  max-width: 180px;
+  display: table-cell;
+}
+
+.referrals-count {
+  display: inline-block;
+  padding: 0.6rem 1.2rem;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+  border-radius: 25px;
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: #667eea;
+  border: 2px solid rgba(102, 126, 234, 0.2);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.referrals-count.clickable {
+  border: none;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  cursor: pointer;
+}
+
+.referrals-count.clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+  background: linear-gradient(135deg, #764ba2, #667eea);
+}
+
+/* Pagination Styles */
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin: 2rem 0 1rem;
+  flex-wrap: wrap;
+}
+
+.pagination-btn {
+  padding: 0.7rem 1.5rem;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.pagination-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.pagination-pages {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.pagination-page {
+  padding: 0.6rem 1rem;
+  background: white;
+  color: #667eea;
+  border: 2px solid #667eea;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 45px;
+}
+
+.pagination-page:hover {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  transform: translateY(-2px);
+}
+
+.pagination-page.active {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.pagination-ellipsis {
+  color: #666;
+  font-weight: 600;
+  padding: 0 0.5rem;
+}
+
+.pagination-info {
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+  margin: 1rem 0 2rem;
+  font-weight: 500;
+}
+
+/* Responsive Ranking Table */
+@media (max-width: 768px) {
+  .ranking-table-container {
+    overflow-x: auto;
+    margin: 1rem 0;
+    max-width: 100%;
+  }
+
+  .ranking-table {
+    min-width: 650px;
+  }
+
+  .ranking-table th,
+  .rank-cell,
+  .name-cell,
+  .badge-cell,
+  .referrals-cell {
+    padding: 0.7rem 0.5rem;
+  }
+
+  .rank-number {
+    font-size: 1.1rem;
+  }
+
+  .rank-badge-tag {
+    padding: 0.4rem 0.6rem;
+    min-width: 70px;
+  }
+
+  .rank-badge-tag .badge-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.15rem;
+  }
+
+  .rank-badge-tag .badge-label {
+    font-size: 0.65rem;
+  }
+
+  .user-name {
+    font-size: 0.95rem;
+  }
+
+  .user-mobile {
+    font-size: 0.85rem;
+  }
+
+  .referrals-count {
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .pagination-btn {
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .pagination-page {
+    padding: 0.5rem 0.8rem;
+    min-width: 40px;
+    font-size: 0.85rem;
+  }
+
+  .pagination-info {
+    font-size: 0.85rem;
+  }
+}
+
+/* Network Modal Styles */
+.network-modal-content {
+  background: white;
+  border-radius: 16px;
+  max-width: 95%;
+  width: 1200px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+.network-modal-content .modal-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem 2rem;
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.network-modal-content .modal-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.network-modal-content .modal-body {
+  padding: 2rem;
+}
+
+.network-content {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .network-modal-content {
+    max-width: 98%;
+    max-height: 95vh;
+  }
+
+  .network-modal-content .modal-header {
+    padding: 1rem 1.5rem;
+  }
+
+  .network-modal-content .modal-header h3 {
+    font-size: 1rem;
+  }
+
+  .network-modal-content .modal-body {
+    padding: 1rem;
   }
 }
