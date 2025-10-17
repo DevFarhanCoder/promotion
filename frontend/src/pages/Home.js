@@ -217,17 +217,13 @@ const Home = () => {
       });
       
       if (response.data.imageUrl) {
-        // Use the download endpoint for forced download
-        const filename = response.data.imageUrl.split('/').pop();
-        const downloadUrl = `https://promotion-backend.onrender.com/download/${filename}`;
-        
-        // Use the user-friendly filename from backend
+        // Download Base64 image directly
         const downloadFilename = response.data.userFriendlyFilename || 
           `${user.displayName}-${language}-promotional.png`;
         
-        // Create download link
+        // Create download link from Base64 data URL
         const link = document.createElement('a');
-        link.href = downloadUrl;
+        link.href = response.data.imageUrl; // Base64 data URL
         link.download = downloadFilename;
         document.body.appendChild(link);
         link.click();
@@ -253,27 +249,40 @@ const Home = () => {
       });
       
       if (response.data.imageUrl) {
-        const shareUrl = `https://promotion-backend.onrender.com${response.data.imageUrl}`;
-        
-        if (navigator.share) {
+        // For Base64 images, we can share via Web Share API if supported
+        if (navigator.share && response.data.base64) {
           try {
+            // Convert Base64 to Blob for sharing
+            const byteString = atob(response.data.base64);
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+              ia[i] = byteString.charCodeAt(i);
+            }
+            const blob = new Blob([ab], { type: 'image/png' });
+            const file = new File([blob], response.data.userFriendlyFilename || 'promotional.png', { type: 'image/png' });
+            
             await navigator.share({
               title: 'Promotional Image',
               text: `Check out my personalized promotional image!`,
-              url: shareUrl,
+              files: [file]
             });
           } catch (err) {
             console.log('Error sharing:', err);
-            // Fallback to clipboard
-            navigator.clipboard.writeText(shareUrl).then(() => {
-              alert('Image URL copied to clipboard!');
-            });
+            // Fallback - download image
+            alert('Sharing not supported. Image will be downloaded instead.');
+            const link = document.createElement('a');
+            link.href = response.data.imageUrl;
+            link.download = response.data.userFriendlyFilename || 'promotional.png';
+            link.click();
           }
         } else {
-          // Fallback - copy to clipboard
-          navigator.clipboard.writeText(shareUrl).then(() => {
-            alert('Image URL copied to clipboard!');
-          });
+          // Fallback - download image
+          alert('Sharing not supported. Image will be downloaded instead.');
+          const link = document.createElement('a');
+          link.href = response.data.imageUrl;
+          link.download = response.data.userFriendlyFilename || 'promotional.png';
+          link.click();
         }
       }
     } catch (err) {

@@ -24,25 +24,22 @@ router.post('/generate', auth, async (req, res) => {
       });
     }
     
-    // Load the base promotional image
-    const baseImagePath = path.join(__dirname, '../uploads', promoImage.filename);
-    
-    if (!fs.existsSync(baseImagePath)) {
-      console.error(`Missing image file: ${promoImage.filename} for image ID: ${imageId}`);
+    // Check if image data exists in MongoDB
+    if (!promoImage.imageData) {
+      console.error(`Missing image data for image ID: ${imageId}`);
       
-      // Mark image as inactive since file is missing
       promoImage.isActive = false;
       await promoImage.save();
       
       return res.status(404).json({ 
-        message: 'Image file not found on server. Please contact admin to re-upload this promotional image.',
-        imageId: imageId,
-        filename: promoImage.filename
+        message: 'Image data not found. Please contact admin to re-upload this promotional image.',
+        imageId: imageId
       });
     }
     
-    // Load the base image
-    const baseImage = await Jimp.read(baseImagePath);
+    // Convert Base64 to buffer for Jimp
+    const imageBuffer = Buffer.from(promoImage.imageData, 'base64');
+    const baseImage = await Jimp.read(imageBuffer);
     const originalWidth = baseImage.getWidth();
     const originalHeight = baseImage.getHeight();
     
@@ -110,22 +107,22 @@ router.post('/generate', auth, async (req, res) => {
       }, textWidth, 200); // Increased height for full number
     }
 
-    // Generate unique filename and save
-    const filename = `personalized-${language}-${imageId}-${user._id}-${Date.now()}.png`;
-    const filepath = path.join(__dirname, '../uploads', filename);
-    
-    await extendedImage.writeAsync(filepath);
+    // Convert image to Base64 instead of saving to file
+    const personalizedImageBuffer = await extendedImage.getBufferAsync(Jimp.MIME_PNG);
+    const base64Image = personalizedImageBuffer.toString('base64');
+    const dataUrl = `data:image/png;base64,${base64Image}`;
 
     // Create a user-friendly filename for download
     const userFriendlyFilename = `${user.displayName}-${language}-promotional.png`;
     
     res.json({
       message: 'Personalized image generated successfully',
-      imageUrl: `/uploads/${filename}`,
-      filename: filename,
+      imageUrl: dataUrl, // Send Base64 data URL
+      base64: base64Image, // Also send raw Base64 for download
       userFriendlyFilename: userFriendlyFilename,
       language: language,
-      imageId: imageId
+      imageId: imageId,
+      storageType: 'mongodb-base64'
     });
 
   } catch (error) {

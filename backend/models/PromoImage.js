@@ -9,6 +9,19 @@ const promoImageSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  // Store image as Base64 string directly in MongoDB
+  imageData: {
+    type: String, // Base64 encoded image
+    required: false // Optional for backward compatibility
+  },
+  mimeType: {
+    type: String, // e.g., 'image/png', 'image/jpeg'
+    required: false
+  },
+  cloudinaryUrl: {
+    type: String,
+    default: null // Kept for backward compatibility
+  },
   title: {
     type: String,
     required: true,

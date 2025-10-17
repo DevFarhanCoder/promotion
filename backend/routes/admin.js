@@ -10,8 +10,11 @@ const Customer = require('../models/Customer');
 
 const router = express.Router();
 
-// Configure multer for admin image uploads
-const storage = multer.diskStorage({
+// Import Cloudinary configuration
+const { cloudinary, storage: cloudinaryStorage } = require('../config/cloudinary');
+
+// Fallback to local storage if Cloudinary is not configured
+const localStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, './uploads/');
   },
@@ -20,6 +23,13 @@ const storage = multer.diskStorage({
     cb(null, 'promo-base-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
+
+// Use Cloudinary if configured, otherwise use local storage
+const isCloudinaryConfigured = process.env.CLOUDINARY_CLOUD_NAME && 
+                                process.env.CLOUDINARY_API_KEY && 
+                                process.env.CLOUDINARY_API_SECRET;
+
+const storage = isCloudinaryConfigured ? cloudinaryStorage : localStorage;
 
 const upload = multer({
   storage: storage,
@@ -109,10 +119,18 @@ router.post('/upload-promo-image', adminAuth, upload.single('promoImage'), async
       return res.status(400).json({ message: 'Please upload an image file' });
     }
 
-    // Create new promo image record with automatic date
+    // Convert image to Base64 for MongoDB storage
+    const fs = require('fs');
+    const imageBuffer = req.file.buffer || fs.readFileSync(req.file.path);
+    const base64Image = imageBuffer.toString('base64');
+    const dataUrl = `data:${req.file.mimetype};base64,${base64Image}`;
+
+    // Create new promo image record with Base64 data
     const promoImage = new PromoImage({
-      filename: req.file.filename,
+      filename: req.file.filename || req.file.originalname,
       originalName: req.file.originalname,
+      imageData: base64Image, // Store Base64 string
+      mimeType: req.file.mimetype, // Store mime type
       title: title || 'Promotional Event',
       description: description || '',
       isActive: true,
@@ -120,6 +138,11 @@ router.post('/upload-promo-image', adminAuth, upload.single('promoImage'), async
     });
 
     await promoImage.save();
+
+    // Clean up local file if it exists (we don't need it anymore)
+    if (req.file.path && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
 
     res.json({
       message: 'Promotional image uploaded successfully',
@@ -130,7 +153,8 @@ router.post('/upload-promo-image', adminAuth, upload.single('promoImage'), async
         title: promoImage.title,
         description: promoImage.description,
         eventDate: promoImage.eventDate,
-        imageUrl: `/uploads/${promoImage.filename}`
+        imageUrl: `/api/admin/image/${promoImage._id}`, // API endpoint to serve image
+        storageType: 'mongodb'
       }
     });
 
@@ -239,27 +263,16 @@ router.get('/public-images', async (req, res) => {
   try {
     const promoImages = await PromoImage.find({ isActive: true }).sort({ eventDate: -1 });
     
-    // Filter out images where the file doesn't exist
-    const fs = require('fs');
-    const path = require('path');
-    
-    const imagesWithUrl = promoImages
-      .filter(img => {
-        const filePath = path.join(__dirname, '../uploads', img.filename);
-        const exists = fs.existsSync(filePath);
-        if (!exists) {
-          console.log(`Warning: Image file not found for ${img.filename}, skipping from results`);
-        }
-        return exists;
-      })
-      .map(img => ({
-        id: img._id,
-        filename: img.filename,
-        title: img.title,
-        description: img.description,
-        eventDate: img.eventDate,
-        imageUrl: `/uploads/${img.filename}`
-      }));
+    const imagesWithUrl = promoImages.map(img => ({
+      id: img._id,
+      filename: img.filename,
+      title: img.title,
+      description: img.description,
+      eventDate: img.eventDate,
+      // Return Base64 data URL directly
+      imageUrl: img.imageData ? `data:${img.mimeType};base64,${img.imageData}` : null,
+      storageType: 'mongodb'
+    }));
 
     res.json({
       message: 'Promotional images retrieved successfully',
