@@ -235,6 +235,11 @@ const AllUsersManagement = () => {
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
 
+        {/* Scroll Hint for Mobile */}
+        <div className="mobile-scroll-hint">
+          ← Swipe left/right to see all columns →
+        </div>
+
         {/* Network Table */}
         <div className="network-table-container">
           <table className="network-table">
@@ -660,6 +665,24 @@ const AllUsersManagement = () => {
           text-align: center;
         }
 
+        .mobile-scroll-hint {
+          display: none;
+          text-align: center;
+          padding: 8px;
+          background: linear-gradient(135deg, #667eea, #764ba2);
+          color: white;
+          font-size: 12px;
+          font-weight: 500;
+          border-radius: 6px;
+          margin: 0 10px 10px 10px;
+          animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
+        }
+
         .network-table-container {
           background: white;
           border-radius: 10px;
@@ -1006,45 +1029,117 @@ const AllUsersManagement = () => {
           }
 
           .management-content {
-            padding: 0 15px;
+            padding: 0 10px;
           }
 
           .section-title {
-            font-size: 1.25rem;
+            font-size: 1.1rem;
           }
 
           .section-subtitle {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
           }
 
-          .users-table-container {
-            border-radius: 6px;
+          /* Show scroll hint on mobile */}
+          .mobile-scroll-hint {
+            display: block;
+          }
+
+          /* Make table scrollable horizontally */
+          .network-table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
             margin: 0 5px;
           }
 
-          .users-management-table {
-            font-size: 12px;
+          .network-table {
+            min-width: 900px; /* Ensure table doesn't shrink */
           }
 
-          .users-management-table th,
-          .users-management-table td {
-            padding: 8px 5px;
-            font-size: 12px;
-            max-width: 120px;
+          /* Compact table headers */
+          .network-table thead tr:first-child th {
+            padding: 6px 2px;
+            font-size: 9px;
           }
 
-          .users-management-table th {
-            font-size: 11px;
+          .network-table thead tr.grand-total-row th {
+            padding: 5px 2px;
+            font-size: 10px;
+          }
+
+          .network-table thead tr.separate-totals th {
+            padding: 5px 2px;
+            font-size: 9px;
+          }
+
+          .network-table thead tr.label-row th {
+            padding: 4px 1px;
+            font-size: 8px;
+          }
+
+          /* Compact table body */
+          .network-table td {
+            padding: 6px 2px;
+            font-size: 10px;
+          }
+
+          .col-sno {
+            width: 30px;
+          }
+
+          .col-user {
+            min-width: 70px;
+            font-size: 10px;
+          }
+
+          .col-mobile {
+            min-width: 70px;
+            font-size: 10px;
+          }
+
+          .col-introducer {
+            min-width: 80px;
+            font-size: 10px;
+          }
+
+          .col-type {
+            min-width: 50px;
+            font-size: 10px;
+          }
+
+          .col-delete {
+            min-width: 50px;
+          }
+
+          .count-value {
+            font-size: 10px;
+          }
+
+          .zero-value {
+            font-size: 9px;
+          }
+
+          .total-cell {
+            font-size: 10px;
+          }
+
+          .delete-btn {
+            font-size: 9px;
+            padding: 4px 6px;
+          }
+
+          .edit-icon {
+            font-size: 9px;
           }
 
           .introducer-input {
-            font-size: 13px;
-            padding: 5px 6px;
+            font-size: 10px;
+            padding: 4px 5px;
           }
 
           .suggestion-item {
-            padding: 6px 10px;
-            font-size: 13px;
+            padding: 6px 8px;
+            font-size: 10px;
           }
 
           .radio-option {
@@ -1054,13 +1149,13 @@ const AllUsersManagement = () => {
 
         @media (max-width: 480px) {
           .management-content {
-            padding: 0 12px;
+            padding: 0 5px;
           }
 
           .navbar-container {
             flex-direction: column;
             gap: 10px;
-            padding: 0.75rem;
+            padding: 0.5rem;
           }
 
           .navbar-nav {
@@ -1069,17 +1164,118 @@ const AllUsersManagement = () => {
           }
 
           .section-title {
-            font-size: 1.1rem;
+            font-size: 1rem;
             text-align: center;
           }
 
           .section-subtitle {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             text-align: center;
           }
 
-          .users-table-container {
-            margin: 0 5px;
+          .network-table-container {
+            margin: 0;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .network-table {
+            min-width: 850px; /* Ensure minimum width for all columns */
+          }
+
+          /* Extra compact for very small screens */
+          .network-table thead tr:first-child th {
+            padding: 5px 1px;
+            font-size: 8px;
+          }
+
+          .network-table thead tr.grand-total-row th {
+            padding: 4px 1px;
+            font-size: 9px;
+          }
+
+          .network-table thead tr.separate-totals th {
+            padding: 4px 1px;
+            font-size: 8px;
+          }
+
+          .network-table thead tr.label-row th {
+            padding: 3px 1px;
+            font-size: 7px;
+          }
+
+          .network-table td {
+            padding: 5px 1px;
+            font-size: 9px;
+          }
+
+          .col-sno {
+            width: 25px;
+          }
+
+          .col-user {
+            min-width: 60px;
+            font-size: 9px;
+          }
+
+          .col-mobile {
+            min-width: 65px;
+            font-size: 9px;
+          }
+
+          .col-introducer {
+            min-width: 70px;
+            font-size: 9px;
+          }
+
+          .col-type {
+            min-width: 45px;
+            font-size: 9px;
+          }
+
+          .col-delete {
+            min-width: 45px;
+          }
+
+          .delete-btn {
+            font-size: 8px;
+            padding: 3px 5px;
+          }
+
+          .count-value {
+            font-size: 9px;
+          }
+
+          .zero-value {
+            font-size: 8px;
+          }
+
+          .total-cell {
+            font-size: 9px;
+          }
+
+          .edit-icon {
+            font-size: 8px;
+          }
+
+          .introducer-input {
+            font-size: 9px;
+            padding: 3px 4px;
+          }
+
+          .suggestion-item {
+            padding: 5px 6px;
+            font-size: 9px;
+          }
+
+          .radio-option {
+            font-size: 11px;
+            padding: 2px;
+          }
+
+          .cancel-btn {
+            font-size: 9px;
+            padding: 2px 5px;
           }
 
           .users-management-table {
