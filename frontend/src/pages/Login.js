@@ -23,6 +23,10 @@ const Login = () => {
     setError('');
 
     try {
+      // Clear any existing tokens before login
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
       // Validate mobile number
       if (!/^[0-9]{10}$/.test(formData.mobile)) {
         throw new Error('Please enter a valid 10-digit mobile number');
@@ -33,10 +37,33 @@ const Login = () => {
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
+        
+        console.log('✅ Login successful, navigating to home');
         navigate('/home');
+      } else {
+        throw new Error('No token received from server');
       }
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Login failed');
+      console.error('❌ Login error:', err);
+      
+      // Handle specific error messages
+      let errorMessage = 'Login failed';
+      
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      // Check for token-related errors
+      if (errorMessage.toLowerCase().includes('token') || 
+          errorMessage.toLowerCase().includes('expired')) {
+        errorMessage = 'Session expired. Please try logging in again.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

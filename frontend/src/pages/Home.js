@@ -22,14 +22,38 @@ const Home = () => {
   const [levelLoading, setLevelLoading] = useState(false);
 
   useEffect(() => {
-    // Get user data from localStorage
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-      // Fetch the logged-in user's network
-      fetchUserNetwork(parsedUser.id);
-    }
+    // Validate token and get user data
+    const validateAndFetchData = async () => {
+      const userData = localStorage.getItem('user');
+      const token = localStorage.getItem('token');
+      
+      // Check if user data and token exist
+      if (!userData || !token) {
+        console.log('⚠️ No user data or token found, redirecting to login');
+        navigate('/login');
+        return;
+      }
+      
+      try {
+        const parsedUser = JSON.parse(userData);
+        
+        // Validate token by making a test API call
+        await api.get('/auth/me').catch((err) => {
+          // If token is invalid/expired, the interceptor will handle redirect
+          console.log('❌ Token validation failed');
+          throw err;
+        });
+        
+        setUser(parsedUser);
+        // Fetch the logged-in user's network
+        fetchUserNetwork(parsedUser.id);
+      } catch (err) {
+        console.error('Error validating session:', err);
+        // Don't redirect here, let the interceptor handle it
+      }
+    };
+    
+    validateAndFetchData();
     
     // Fetch promotional images
     fetchPromoImages();
@@ -50,7 +74,7 @@ const Home = () => {
     return () => {
       window.removeEventListener('profileUpdated', handleProfileUpdate);
     };
-  }, []);
+  }, [navigate]);
 
   const fetchPromoImages = async () => {
     try {
@@ -626,7 +650,7 @@ const Home = () => {
                               {/* Level 2 CP/Customer - Direct referrals */}
                               <td className="level-count-cell cp-cell">
                                 {branch.level2?.cp > 0 ? (
-                                  <span className="count-number" onClick={(e) => { e.stopPropagation(); handleViewClick(branch, 2, 'CP'); }}>
+                                  <span className="count-number">
                                     {branch.level2.cp}
                                   </span>
                                 ) : (
@@ -635,7 +659,7 @@ const Home = () => {
                               </td>
                               <td className="level-count-cell customer-cell">
                                 {branch.level2?.customer > 0 ? (
-                                  <span className="count-number" onClick={(e) => { e.stopPropagation(); handleViewClick(branch, 2, 'Customer'); }}>
+                                  <span className="count-number">
                                     {branch.level2.customer}
                                   </span>
                                 ) : (
@@ -645,7 +669,7 @@ const Home = () => {
                               {/* Level 3 CP/Customer */}
                               <td className="level-count-cell cp-cell">
                                 {branch.level3?.cp > 0 ? (
-                                  <span className="count-number" onClick={(e) => { e.stopPropagation(); handleViewClick(branch, 3, 'CP'); }}>
+                                  <span className="count-number">
                                     {branch.level3.cp}
                                   </span>
                                 ) : (
@@ -654,7 +678,7 @@ const Home = () => {
                               </td>
                               <td className="level-count-cell customer-cell">
                                 {branch.level3?.customer > 0 ? (
-                                  <span className="count-number" onClick={(e) => { e.stopPropagation(); handleViewClick(branch, 3, 'Customer'); }}>
+                                  <span className="count-number">
                                     {branch.level3.customer}
                                   </span>
                                 ) : (
@@ -664,7 +688,7 @@ const Home = () => {
                               {/* Level 4 CP/Customer */}
                               <td className="level-count-cell cp-cell">
                                 {branch.level4?.cp > 0 ? (
-                                  <span className="count-number" onClick={(e) => { e.stopPropagation(); handleViewClick(branch, 4, 'CP'); }}>
+                                  <span className="count-number">
                                     {branch.level4.cp}
                                   </span>
                                 ) : (
@@ -673,7 +697,7 @@ const Home = () => {
                               </td>
                               <td className="level-count-cell customer-cell">
                                 {branch.level4?.customer > 0 ? (
-                                  <span className="count-number" onClick={(e) => { e.stopPropagation(); handleViewClick(branch, 4, 'Customer'); }}>
+                                  <span className="count-number">
                                     {branch.level4.customer}
                                   </span>
                                 ) : (

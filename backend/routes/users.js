@@ -937,4 +937,44 @@ router.get('/ranking', auth, async (req, res) => {
   }
 });
 
+// @route   DELETE /api/users/delete-user/:userId
+// @desc    Delete a user from the system (Channel Partner or Customer)
+// @access  Private (Admin or authorized users)
+router.delete('/delete-user/:userId', auth, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Find the user in both collections
+    let deletedUser = await ChannelPartner.findByIdAndDelete(userId);
+    let userType = 'ChannelPartner';
+
+    if (!deletedUser) {
+      deletedUser = await Customer.findByIdAndDelete(userId);
+      userType = 'Customer';
+    }
+
+    if (!deletedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Optional: Update referral chains if necessary
+    // You might want to reassign orphaned users or update counts
+    // For now, we'll just delete the user
+
+    res.json({
+      success: true,
+      message: `User deleted successfully from ${userType} collection`,
+      deletedUser: {
+        id: deletedUser._id,
+        name: deletedUser.displayName || deletedUser.name,
+        mobile: deletedUser.mobile
+      }
+    });
+
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ message: 'Server error deleting user' });
+  }
+});
+
 module.exports = router;

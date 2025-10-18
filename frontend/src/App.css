@@ -2473,16 +2473,9 @@ body {
   color: #3182ce;
   font-weight: 600;
   font-size: 1.2rem;
-  cursor: pointer;
   padding: 2px 4px;
   border-radius: 3px;
-  transition: all 0.2s ease;
   display: inline-block;
-}
-
-.count-number:hover {
-  background-color: #e6f7ff;
-  color: #1890ff;
 }
 
 .total-cell {

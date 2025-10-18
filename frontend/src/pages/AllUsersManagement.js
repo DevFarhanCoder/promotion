@@ -4,42 +4,77 @@ import api from '../utils/api';
 
 const AllUsersManagement = () => {
   const navigate = useNavigate();
-  const [users, setUsers] = useState([]);
+  const [user, setUser] = useState(null);
+  const [userNetwork, setUserNetwork] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  // Edit states
   const [editingIntroducer, setEditingIntroducer] = useState(null);
   const [editingUserType, setEditingUserType] = useState(null);
   const [introducerInput, setIntroducerInput] = useState('');
   const [introducerSuggestions, setIntroducerSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  
+  // Level modal states
+  const [selectedLevel, setSelectedLevel] = useState(null);
+  const [levelUsers, setLevelUsers] = useState([]);
+  const [showLevelModal, setShowLevelModal] = useState(false);
+  const [levelLoading, setLevelLoading] = useState(false);
 
-  // Fetch all users
-  const fetchAllUsers = useCallback(async () => {
+  // Fetch user network data
+  const fetchUserNetwork = useCallback(async () => {
     setLoading(true);
-    setError(''); // Clear previous errors
+    setError('');
     try {
-      console.log('Fetching all users from:', api.defaults.baseURL + '/users/all-users');
-      const response = await api.get('/users/all-users');
-      console.log('Users fetched successfully:', response.data);
-      console.log('Number of users:', response.data.users?.length);
-      if (response.data.users?.length > 0) {
-        console.log('First user sample:', response.data.users[0]);
-        console.log('Introducer data:', response.data.users[0]?.introducer);
-        console.log('IntroducerName:', response.data.users[0]?.introducerName);
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        
+        const response = await api.get(`/users/referral-network/${parsedUser.id}`);
+        const branches = response.data.branches || [];
+        const directReferrals = branches.filter(branch => !branch.isRoot);
+        setUserNetwork(directReferrals);
       }
-      setUsers(response.data.users || []);
     } catch (err) {
-      console.error('Error fetching users:', err);
-      console.error('Error response:', err.response);
-      const errorMsg = err.response?.data?.message || err.message || 'Failed to fetch users';
+      console.error('Error fetching user network:', err);
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to fetch user network';
       setError(errorMsg);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Search for introducers by mobile/name
+  // Fetch users at a specific level for a branch
+  const handleViewClick = async (branch, level, userType) => {
+    setLevelLoading(true);
+    setError('');
+    
+    try {
+      const response = await api.get(`/users/level-users/${branch.id}/${level}?userType=${userType}`);
+      if (response.data.success) {
+        setLevelUsers(response.data.users || []);
+        setSelectedLevel({
+          branchUserId: branch.id,
+          level,
+          branchUserName: branch.displayName || branch.name,
+          branchUser: response.data.branchUser,
+          totalUsers: response.data.totalUsers,
+          userType
+        });
+        setShowLevelModal(true);
+      }
+    } catch (err) {
+      console.error('Fetch level users error:', err);
+      setError(err.response?.data?.message || 'Failed to fetch level users');
+    } finally {
+      setLevelLoading(false);
+    }
+  };
+
+  // Search for introducers
   const searchIntroducers = useCallback(async (searchTerm) => {
     if (!searchTerm || searchTerm.length < 2) {
       setIntroducerSuggestions([]);
@@ -60,46 +95,90 @@ const AllUsersManagement = () => {
   // Update introducer
   const updateIntroducer = async (userId, introducerId) => {
     try {
-      console.log('Updating introducer for user:', userId, 'to:', introducerId);
-      const response = await api.put(`/users/update-introducer/${userId}`, { introducerId });
-      console.log('Introducer update response:', response.data);
-      await fetchAllUsers(); // Refresh data
+      await api.put(`/users/update-introducer/${userId}`, { introducerId });
+      await fetchUserNetwork(); // Refresh data
       setEditingIntroducer(null);
       setIntroducerInput('');
       setShowSuggestions(false);
-      setSuccess('Introducer updated successfully! Network relationships have been refreshed.');
-      setTimeout(() => setSuccess(''), 5000);
+      setSuccess('Introducer updated successfully!');
+      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       console.error('Error updating introducer:', err);
-      console.error('Error response:', err.response);
-      const errorMsg = err.response?.data?.message || err.message || 'Failed to update introducer';
+      const errorMsg = err.response?.data?.message || 'Failed to update introducer';
       setError(errorMsg);
-      setTimeout(() => setError(''), 5000);
+      setTimeout(() => setError(''), 3000);
     }
   };
 
-  // Update user type and collection
+  // Update user type
   const updateUserType = async (userId, userType) => {
     try {
-      console.log('Updating user type for user:', userId, 'to:', userType);
-      const response = await api.put(`/users/update-user-type/${userId}`, { userType });
-      console.log('User type update response:', response.data);
-      await fetchAllUsers(); // Refresh data
+      await api.put(`/users/update-user-type/${userId}`, { userType });
+      await fetchUserNetwork(); // Refresh data
       setEditingUserType(null);
       setSuccess(`User type updated to ${userType} successfully!`);
-      setTimeout(() => setSuccess(''), 5000);
+      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       console.error('Error updating user type:', err);
-      console.error('Error response:', err.response);
-      const errorMsg = err.response?.data?.message || err.message || 'Failed to update user type';
+      const errorMsg = err.response?.data?.message || 'Failed to update user type';
       setError(errorMsg);
-      setTimeout(() => setError(''), 5000);
+      setTimeout(() => setError(''), 3000);
     }
+  };
+
+  // Delete user
+  const handleDeleteUser = async (userId, userName) => {
+    if (window.confirm(`Are you sure you want to delete ${userName}? This action cannot be undone.`)) {
+      try {
+        await api.delete(`/users/delete-user/${userId}`);
+        await fetchUserNetwork(); // Refresh data
+        setSuccess(`User ${userName} deleted successfully!`);
+        setTimeout(() => setSuccess(''), 3000);
+      } catch (err) {
+        console.error('Error deleting user:', err);
+        const errorMsg = err.response?.data?.message || 'Failed to delete user';
+        setError(errorMsg);
+        setTimeout(() => setError(''), 3000);
+      }
+    }
+  };
+
+  // Calculate grand totals
+  const calculateGrandTotals = () => {
+    const totals = {
+      level1CP: 0,
+      level1Cust: 0,
+      level2CP: 0,
+      level2Cust: 0,
+      level3CP: 0,
+      level3Cust: 0,
+      level4CP: 0,
+      level4Cust: 0,
+      totalCP: 0,
+      totalCust: 0,
+      grandTotal: 0
+    };
+
+    userNetwork.forEach(branch => {
+      totals.level1CP += branch.level2?.cp || 0;
+      totals.level1Cust += branch.level2?.customer || 0;
+      totals.level2CP += branch.level3?.cp || 0;
+      totals.level2Cust += branch.level3?.customer || 0;
+      totals.level3CP += branch.level4?.cp || 0;
+      totals.level3Cust += branch.level4?.customer || 0;
+      totals.level4CP += branch.level5?.cp || 0;
+      totals.level4Cust += branch.level5?.customer || 0;
+      totals.totalCP += branch.totalCp || 0;
+      totals.totalCust += branch.totalCustomer || 0;
+    });
+
+    totals.grandTotal = totals.totalCP + totals.totalCust;
+    return totals;
   };
 
   useEffect(() => {
-    fetchAllUsers();
-  }, [fetchAllUsers]);
+    fetchUserNetwork();
+  }, [fetchUserNetwork]);
 
   // Handle introducer input change
   const handleIntroducerInputChange = (value) => {
@@ -150,43 +229,170 @@ const AllUsersManagement = () => {
       <div className="management-content">
         <div className="section-header">
           <h2 className="section-title">All Users Management</h2>
-          <p className="section-subtitle">Manage all users, their introducers, and user types</p>
+          <p className="section-subtitle">Manage your complete network with detailed level breakdowns</p>
         </div>
 
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
 
-        <div className="users-table-container">
-          <table className="users-management-table">
+        {/* Network Table */}
+        <div className="network-table-container">
+          <table className="network-table">
             <thead>
+              {/* Main Header Row */}
               <tr>
-                <th>Sr No.</th>
-                <th>Name</th>
-                <th>Mobile No.</th>
-                <th>Introducer Name/Edit</th>
-                <th>I AM a</th>
+                <th className="sr-no-header" rowSpan="4">S No</th>
+                <th className="level-header user-phone-header" rowSpan="4">User</th>
+                <th className="level-header user-phone-header" rowSpan="1">     </th>
+                <th className="level-header-group" colSpan="2">Level 1</th>
+                <th className="level-header-group" colSpan="2">Level 2</th>
+                <th className="level-header-group" colSpan="2">Level 3</th>
+                <th className="level-header-group" colSpan="2">Level 4</th>
+                <th className="level-header-group" colSpan="2">Total</th>
+                <th className="level-header-group" rowSpan="4">Introducer Name/Edit</th>
+                <th className="level-header-group" rowSpan="4">I AM a</th>
+                <th className="level-header-group" rowSpan="4">Delete</th>
+              </tr>
+              
+              {/* Grand Total Row */}
+              {(() => {
+                const totals = calculateGrandTotals();
+                return (
+                  <tr className="total-header-row combined-totals">
+                    <th className="grand-total-label-cell">Grand Total</th>
+                    <th className="total-header-cell" colSpan="2">{totals.level1CP + totals.level1Cust}</th>
+                    <th className="total-header-cell" colSpan="2">{totals.level2CP + totals.level2Cust}</th>
+                    <th className="total-header-cell" colSpan="2">{totals.level3CP + totals.level3Cust}</th>
+                    <th className="total-header-cell" colSpan="2">{totals.level4CP + totals.level4Cust}</th>
+                    <th className="total-header-cell" colSpan="2">{totals.totalCP + totals.totalCust}</th>
+                  </tr>
+                );
+              })()}
+              
+              {/* Total Separate CP/Cust Row */}
+              {(() => {
+                const totals = calculateGrandTotals();
+                return (
+                  <tr className="total-header-row separate-totals">
+                    <th className="total-label-cell">Total</th>
+                    <th className="total-header-cell cp-total">{totals.level1CP}</th>
+                    <th className="total-header-cell customer-total">{totals.level1Cust}</th>
+                    <th className="total-header-cell cp-total">{totals.level2CP}</th>
+                    <th className="total-header-cell customer-total">{totals.level2Cust}</th>
+                    <th className="total-header-cell cp-total">{totals.level3CP}</th>
+                    <th className="total-header-cell customer-total">{totals.level3Cust}</th>
+                    <th className="total-header-cell cp-total">{totals.level4CP}</th>
+                    <th className="total-header-cell customer-total">{totals.level4Cust}</th>
+                    <th className="total-header-cell cp-total">{totals.totalCP}</th>
+                    <th className="total-header-cell customer-total">{totals.totalCust}</th>
+                  </tr>
+                );
+              })()}
+              
+              {/* CP/Cust Labels Row */}
+              <tr className="total-header-row label-row">
+                <th className="mobile-no-label-cell">Mobile No</th>
+                <th className="sub-level-header cp-label">CP</th>
+                <th className="sub-level-header customer-label">Cust</th>
+                <th className="sub-level-header cp-label">CP</th>
+                <th className="sub-level-header customer-label">Cust</th>
+                <th className="sub-level-header cp-label">CP</th>
+                <th className="sub-level-header customer-label">Cust</th>
+                <th className="sub-level-header cp-label">CP</th>
+                <th className="sub-level-header customer-label">Cust</th>
+                <th className="sub-level-header cp-label">CP</th>
+                <th className="sub-level-header customer-label">Cust</th>
               </tr>
             </thead>
             <tbody>
-              {users.map((user, index) => (
-                <tr key={user._id}>
-                  <td>{index + 1}</td>
-                  <td>{user.displayName || user.name}</td>
-                  <td>{user.mobile || 'N/A'}</td>
+
+              {/* User Rows */}
+              {userNetwork.map((branch, index) => (
+                <tr key={branch.id} className="user-row">
+                  <td className="col-sno">{index + 1}</td>
+                  <td className="col-user">{branch.displayName || branch.name}</td>
+                  <td className="col-mobile">{branch.mobile}</td>
                   
-                  {/* Introducer Name/Edit Column */}
-                  <td className="introducer-cell">
-                    {editingIntroducer === user._id ? (
+                  {/* Level 1 (Level 2 in backend) */}
+                  <td className="level-cell">
+                    {branch.level2?.cp > 0 ? (
+                      <span className="count-value">{branch.level2.cp}</span>
+                    ) : (
+                      <span className="zero-value">0</span>
+                    )}
+                  </td>
+                  <td className="level-cell">
+                    {branch.level2?.customer > 0 ? (
+                      <span className="count-value">{branch.level2.customer}</span>
+                    ) : (
+                      <span className="zero-value">0</span>
+                    )}
+                  </td>
+
+                  {/* Level 2 (Level 3 in backend) */}
+                  <td className="level-cell">
+                    {branch.level3?.cp > 0 ? (
+                      <span className="count-value">{branch.level3.cp}</span>
+                    ) : (
+                      <span className="zero-value">0</span>
+                    )}
+                  </td>
+                  <td className="level-cell">
+                    {branch.level3?.customer > 0 ? (
+                      <span className="count-value">{branch.level3.customer}</span>
+                    ) : (
+                      <span className="zero-value">0</span>
+                    )}
+                  </td>
+
+                  {/* Level 3 (Level 4 in backend) */}
+                  <td className="level-cell">
+                    {branch.level4?.cp > 0 ? (
+                      <span className="count-value">{branch.level4.cp}</span>
+                    ) : (
+                      <span className="zero-value">0</span>
+                    )}
+                  </td>
+                  <td className="level-cell">
+                    {branch.level4?.customer > 0 ? (
+                      <span className="count-value">{branch.level4.customer}</span>
+                    ) : (
+                      <span className="zero-value">0</span>
+                    )}
+                  </td>
+
+                  {/* Level 4 (Level 5 in backend) */}
+                  <td className="level-cell">
+                    {branch.level5?.cp > 0 ? (
+                      <span className="count-value">{branch.level5.cp}</span>
+                    ) : (
+                      <span className="zero-value">0</span>
+                    )}
+                  </td>
+                  <td className="level-cell">
+                    {branch.level5?.customer > 0 ? (
+                      <span className="count-value">{branch.level5.customer}</span>
+                    ) : (
+                      <span className="zero-value">0</span>
+                    )}
+                  </td>
+
+                  {/* Total */}
+                  <td className="total-cell">{branch.totalCp || 0}</td>
+                  <td className="total-cell">{branch.totalCustomer || 0}</td>
+
+                  {/* Introducer Name/Edit */}
+                  <td className="col-introducer">
+                    {editingIntroducer === branch.id ? (
                       <div className="introducer-edit-container">
                         <input
                           type="text"
                           value={introducerInput}
                           onChange={(e) => handleIntroducerInputChange(e.target.value)}
-                          placeholder="Type mobile number or name..."
+                          placeholder="Type mobile or name..."
                           className="introducer-input"
                           autoFocus
                           onBlur={() => {
-                            // Delay to allow selection
                             setTimeout(() => {
                               if (!showSuggestions) {
                                 setEditingIntroducer(null);
@@ -195,14 +401,13 @@ const AllUsersManagement = () => {
                             }, 200);
                           }}
                         />
-                        
                         {showSuggestions && introducerSuggestions.length > 0 && (
                           <div className="suggestions-dropdown">
                             {introducerSuggestions.map((suggester) => (
                               <div
                                 key={suggester._id}
                                 className="suggestion-item"
-                                onClick={() => handleIntroducerSelect(user, suggester)}
+                                onClick={() => handleIntroducerSelect(branch, suggester)}
                               >
                                 {suggester.displayName || suggester.name} - {suggester.mobile}
                               </div>
@@ -214,47 +419,47 @@ const AllUsersManagement = () => {
                       <div
                         className="introducer-display"
                         onClick={() => {
-                          setEditingIntroducer(user._id);
-                          setIntroducerInput(user.introducerName || '');
+                          setEditingIntroducer(branch.id);
+                          setIntroducerInput(user?.displayName || '');
                         }}
                       >
-                        {user.introducerName || 'No Introducer'}
+                        {user?.displayName || 'N/A'}
                         <span className="edit-icon">✎</span>
                       </div>
                     )}
                   </td>
 
-                  {/* I AM a Column */}
-                  <td className="user-type-cell">
-                    {editingUserType === user._id ? (
+                  {/* I AM a */}
+                  <td className="col-type">
+                    {editingUserType === branch.id ? (
                       <div className="user-type-options">
                         <label className="radio-option">
                           <input
                             type="radio"
-                            name={`userType-${user._id}`}
+                            name={`userType-${branch.id}`}
                             value="CP"
-                            checked={user.userType === 'CP'}
-                            onChange={() => handleUserTypeSelect(user, 'CP')}
+                            checked={branch.userType === 'CP'}
+                            onChange={() => handleUserTypeSelect(branch, 'CP')}
                           />
                           CP
                         </label>
                         <label className="radio-option">
                           <input
                             type="radio"
-                            name={`userType-${user._id}`}
+                            name={`userType-${branch.id}`}
                             value="Customer"
-                            checked={user.userType === 'Customer'}
-                            onChange={() => handleUserTypeSelect(user, 'Customer')}
+                            checked={branch.userType === 'Customer'}
+                            onChange={() => handleUserTypeSelect(branch, 'Customer')}
                           />
                           CUST
                         </label>
                         <label className="radio-option">
                           <input
                             type="radio"
-                            name={`userType-${user._id}`}
+                            name={`userType-${branch.id}`}
                             value="Both"
-                            checked={user.userType === 'Both'}
-                            onChange={() => handleUserTypeSelect(user, 'Both')}
+                            checked={branch.userType === 'Both'}
+                            onChange={() => handleUserTypeSelect(branch, 'Both')}
                           />
                           BOTH
                         </label>
@@ -268,19 +473,80 @@ const AllUsersManagement = () => {
                     ) : (
                       <div
                         className="user-type-display"
-                        onClick={() => setEditingUserType(user._id)}
+                        onClick={() => setEditingUserType(branch.id)}
                       >
-                        {user.userType || 'Not Set'}
+                        {branch.userType || 'Customer'}
                         <span className="edit-icon">✎</span>
                       </div>
                     )}
+                  </td>
+
+                  {/* Delete */}
+                  <td className="col-delete">
+                    <button
+                      className="delete-btn"
+                      onClick={() => handleDeleteUser(branch.id, branch.displayName || branch.name)}
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </div>
+
+      {/* Level Users Modal */}
+      {showLevelModal && (
+        <div className="modal-overlay" onClick={() => setShowLevelModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>
+                Level {selectedLevel.level} - {selectedLevel.userType} Users
+              </h3>
+              <span className="subtitle">
+                Under: {selectedLevel.branchUserName} ({selectedLevel.totalUsers} users)
+              </span>
+              <button className="close-btn" onClick={() => setShowLevelModal(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              {levelLoading ? (
+                <div className="loading">Loading...</div>
+              ) : (
+                <table className="level-users-table">
+                  <thead>
+                    <tr>
+                      <th>Sr No</th>
+                      <th>Name</th>
+                      <th>Mobile</th>
+                      <th>User Type</th>
+                      <th>Join Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {levelUsers.map((levelUser, idx) => (
+                      <tr key={levelUser._id}>
+                        <td>{idx + 1}</td>
+                        <td>{levelUser.displayName || levelUser.name}</td>
+                        <td>{levelUser.mobile}</td>
+                        <td>{levelUser.userType || 'Customer'}</td>
+                        <td>
+                          {new Date(levelUser.createdAt).toLocaleDateString('en-US', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                          })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      </div> {/* Close management-content */}
 
       <style jsx>{`
         .management-navbar {
@@ -347,7 +613,7 @@ const AllUsersManagement = () => {
         }
 
         .management-content {
-          max-width: 1200px;
+          max-width: 1400px;
           margin: 0 auto;
           padding: 0 30px;
         }
@@ -379,65 +645,200 @@ const AllUsersManagement = () => {
         .error-message {
           background: #fee;
           color: #c33;
-          padding: 10px;
-          border-radius: 5px;
+          padding: 12px;
+          border-radius: 6px;
           margin-bottom: 20px;
+          text-align: center;
         }
 
         .success-message {
           background: #d4edda;
           color: #155724;
-          padding: 10px;
-          border-radius: 5px;
+          padding: 12px;
+          border-radius: 6px;
           margin-bottom: 20px;
-        }
-
-        .users-table-container {
-          background: white;
-          border-radius: 8px;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-          margin: 0 10px;
-        }
-
-        .users-management-table {
-          width: 100%;
-          border-collapse: collapse;
-          table-layout: auto;
-        }
-
-  .users-management-table th {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    padding: 8px 12px;
-    text-align: left;
-    font-weight: 600;
-    font-size: 12px;
-    white-space: nowrap;
-  }
-
-  .users-management-table th:first-child {
-    text-align: center;
-  }
-
-  .users-management-table td {
-          padding: 8px 12px;
-          border-bottom: 1px solid #e9ecef;
-          position: relative;
-          font-size: 12px;
-          word-wrap: break-word;
-          max-width: 150px;
-        }
-
-        .users-management-table td:first-child {
           text-align: center;
         }
 
-        .users-management-table tbody tr:hover {
+        .network-table-container {
+          background: white;
+          border-radius: 10px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+          margin: 0 10px;
+        }
+
+        .network-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        .network-table thead tr:first-child th {
+          background: linear-gradient(135deg, #667eea, #764ba2);
+          color: white;
+          padding: 8px 4px;
+          font-weight: 600;
+          font-size: 11px;
+          border-right: 1px solid rgba(255,255,255,0.2);
+          text-align: center;
+        }
+
+        .header-spacer {
+          background: transparent;
+          border: none;
+        }
+
+        .network-table thead tr.grand-total-row th {
+          background: linear-gradient(135deg, rgba(210, 180, 140, 0.95), rgba(188, 143, 143, 0.95));
+          color: #fff;
+          padding: 6px 4px;
+          font-weight: 700;
+          font-size: 12px;
+          border-right: 1px solid rgba(255,255,255,0.2);
+          text-align: center;
+        }
+
+        .grand-total-label {
+          text-align: left !important;
+          padding-left: 8px !important;
+          font-weight: 700;
+        }
+
+        .grand-total-value {
+          font-weight: 700;
+        }
+
+        .network-table thead tr.separate-totals th {
+          background: linear-gradient(135deg, #667eea, #764ba2);
+          color: white;
+          padding: 6px 4px;
+          font-weight: 600;
+          font-size: 11px;
+          border-right: 1px solid rgba(255,255,255,0.2);
+          text-align: center;
+        }
+
+        .total-label-cell {
+          text-align: left !important;
+          padding-left: 8px !important;
+        }
+
+        .total-value,
+        .total-cp-value,
+        .total-cust-value {
+          font-weight: 600;
+          text-align: center;
+        }
+
+        .network-table thead tr.label-row th {
+          background: linear-gradient(135deg, #667eea, #764ba2);
+          color: white;
+          padding: 6px 3px;
+          font-weight: 500;
+          font-size: 10px;
+          border-right: 1px solid rgba(255,255,255,0.2);
+          text-align: center;
+        }
+
+        .mobile-no-label-cell {
+          text-align: center !important;
+        }
+
+        .cp-label, .cust-label {
+          font-weight: 500;
+        }
+
+        .network-table th:last-child {
+          border-right: none !important;
+        }
+
+        .level-header {
+          text-align: center;
+          border-right: 2px solid rgba(255,255,255,0.3) !important;
+        }
+
+        .sub-header {
+          text-align: center;
+        }
+
+        .network-table td {
+          padding: 8px 4px;
+          border-bottom: 1px solid #e9ecef;
+          font-size: 12px;
+          text-align: center;
+        }
+
+        .col-sno {
+          width: 40px;
+          text-align: center !important;
+        }
+
+        .col-user {
+          min-width: 100px;
+          text-align: left !important;
+          font-weight: 500;
+          font-size: 12px;
+        }
+
+        .col-mobile {
+          min-width: 95px;
+          font-size: 12px;
+        }
+
+        .col-introducer {
+          min-width: 110px;
+          font-size: 12px;
+        }
+
+        .col-type {
+          min-width: 65px;
+          font-size: 12px;
+        }
+
+        .col-delete {
+          min-width: 65px;
+        }
+
+        .grand-total-row {
+          background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+          font-weight: 700;
+        }
+
+        .total-label {
+          text-align: left !important;
+          padding-left: 15px !important;
+          font-weight: 700;
+          color: #667eea;
+        }
+
+        .total-value {
+          font-weight: 700;
+          color: #667eea;
+        }
+
+        .user-row:hover {
           background: #f8f9fa;
         }
 
-        .introducer-cell {
-          position: relative;
+        .level-cell {
+          transition: all 0.2s;
+        }
+
+        .count-value {
+          color: #667eea;
+          font-weight: 600;
+          font-size: 12px;
+        }
+
+        .zero-value {
+          color: #ccc;
+          font-size: 11px;
+        }
+
+        .total-cell {
+          font-weight: 600;
+          color: #667eea;
+          background: rgba(102, 126, 234, 0.05);
+          font-size: 12px;
         }
 
         .introducer-edit-container {
@@ -446,16 +847,11 @@ const AllUsersManagement = () => {
 
         .introducer-input {
           width: 100%;
-          padding: 5px 8px;
-          border: 1px solid #667eea;
+          padding: 5px 6px;
+          border: 2px solid #667eea;
           border-radius: 4px;
-          font-size: 12px;
+          font-size: 11px;
           outline: none;
-        }
-
-        .introducer-input:focus {
-          border-color: #764ba2;
-          box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
         }
 
         .suggestions-dropdown {
@@ -465,18 +861,23 @@ const AllUsersManagement = () => {
           right: 0;
           background: white;
           border: 1px solid #ddd;
-          border-top: none;
-          border-radius: 0 0 4px 4px;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          border-radius: 4px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
           z-index: 1000;
-          max-height: 200px;
+          max-height: 180px;
           overflow-y: auto;
+          margin-top: 2px;
         }
 
         .suggestion-item {
-          padding: 6px 10px;
+          padding: 8px 10px;
           cursor: pointer;
           font-size: 12px;
+          border-bottom: 1px solid #f0f0f0;
+        }
+
+        .suggestion-item:last-child {
+          border-bottom: none;
         }
 
         .suggestion-item:hover {
@@ -530,7 +931,7 @@ const AllUsersManagement = () => {
           gap: 6px;
           cursor: pointer;
           font-size: 12px;
-          padding: 3px;
+          padding: 4px;
         }
 
         .radio-option:hover {
@@ -548,7 +949,7 @@ const AllUsersManagement = () => {
           background: #f8f9fa;
           border: 1px solid #667eea;
           border-radius: 3px;
-          padding: 2px 8px;
+          padding: 3px 8px;
           cursor: pointer;
           font-size: 11px;
           color: #667eea;
@@ -557,6 +958,24 @@ const AllUsersManagement = () => {
         .cancel-btn:hover {
           background: linear-gradient(135deg, #667eea, #764ba2);
           color: white;
+        }
+
+        .delete-btn {
+          background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+          color: white;
+          border: none;
+          border-radius: 4px;
+          padding: 5px 10px;
+          cursor: pointer;
+          font-size: 11px;
+          font-weight: 500;
+          transition: all 0.2s;
+        }
+
+        .delete-btn:hover {
+          background: linear-gradient(135deg, #ee5a6f, #c92a2a);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(238, 90, 111, 0.4);
         }
 
         .loading {
