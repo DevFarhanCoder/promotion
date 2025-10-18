@@ -488,12 +488,16 @@ const AllUsersManagement = () => {
 
                   {/* Delete */}
                   <td className="col-delete">
-                    <button
-                      className="delete-btn"
-                      onClick={() => handleDeleteUser(branch.id, branch.displayName || branch.name)}
-                    >
-                      Delete
-                    </button>
+                    {((branch.totalCp || 0) + (branch.totalCustomer || 0)) === 0 ? (
+                      <button
+                        className="delete-btn"
+                        onClick={() => handleDeleteUser(branch.id, branch.displayName || branch.name)}
+                      >
+                        Delete
+                      </button>
+                    ) : (
+                      <span style={{ color: '#999', fontSize: '12px' }}>Has referrals</span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -618,7 +622,7 @@ const AllUsersManagement = () => {
         }
 
         .management-content {
-          max-width: 1400px;
+          max-width: 1000px;
           margin: 0 auto;
           padding: 0 30px;
         }
@@ -666,7 +670,7 @@ const AllUsersManagement = () => {
         }
 
         .mobile-scroll-hint {
-          display: none;
+          display: none; /* Hidden by default on desktop */
           text-align: center;
           padding: 8px;
           background: linear-gradient(135deg, #667eea, #764ba2);
@@ -698,9 +702,9 @@ const AllUsersManagement = () => {
         .network-table thead tr:first-child th {
           background: linear-gradient(135deg, #667eea, #764ba2);
           color: white;
-          padding: 8px 4px;
+          padding: 10px 6px;
           font-weight: 600;
-          font-size: 11px;
+          font-size: 13px;
           border-right: 1px solid rgba(255,255,255,0.2);
           text-align: center;
         }
@@ -713,9 +717,9 @@ const AllUsersManagement = () => {
         .network-table thead tr.grand-total-row th {
           background: linear-gradient(135deg, rgba(210, 180, 140, 0.95), rgba(188, 143, 143, 0.95));
           color: #fff;
-          padding: 6px 4px;
+          padding: 8px 6px;
           font-weight: 700;
-          font-size: 12px;
+          font-size: 14px;
           border-right: 1px solid rgba(255,255,255,0.2);
           text-align: center;
         }
@@ -733,9 +737,9 @@ const AllUsersManagement = () => {
         .network-table thead tr.separate-totals th {
           background: linear-gradient(135deg, #667eea, #764ba2);
           color: white;
-          padding: 6px 4px;
+          padding: 8px 6px;
           font-weight: 600;
-          font-size: 11px;
+          font-size: 13px;
           border-right: 1px solid rgba(255,255,255,0.2);
           text-align: center;
         }
@@ -755,9 +759,9 @@ const AllUsersManagement = () => {
         .network-table thead tr.label-row th {
           background: linear-gradient(135deg, #667eea, #764ba2);
           color: white;
-          padding: 6px 3px;
+          padding: 8px 4px;
           font-weight: 500;
-          font-size: 10px;
+          font-size: 12px;
           border-right: 1px solid rgba(255,255,255,0.2);
           text-align: center;
         }
@@ -784,9 +788,9 @@ const AllUsersManagement = () => {
         }
 
         .network-table td {
-          padding: 8px 4px;
+          padding: 10px 6px;
           border-bottom: 1px solid #e9ecef;
-          font-size: 12px;
+          font-size: 14px;
           text-align: center;
         }
 
@@ -799,22 +803,22 @@ const AllUsersManagement = () => {
           min-width: 100px;
           text-align: left !important;
           font-weight: 500;
-          font-size: 12px;
+          font-size: 14px;
         }
 
         .col-mobile {
           min-width: 95px;
-          font-size: 12px;
+          font-size: 14px;
         }
 
         .col-introducer {
           min-width: 110px;
-          font-size: 12px;
+          font-size: 14px;
         }
 
         .col-type {
           min-width: 65px;
-          font-size: 12px;
+          font-size: 14px;
         }
 
         .col-delete {
@@ -849,19 +853,19 @@ const AllUsersManagement = () => {
         .count-value {
           color: #667eea;
           font-weight: 600;
-          font-size: 12px;
+          font-size: 14px;
         }
 
         .zero-value {
           color: #ccc;
-          font-size: 11px;
+          font-size: 13px;
         }
 
         .total-cell {
           font-weight: 600;
           color: #667eea;
           background: rgba(102, 126, 234, 0.05);
-          font-size: 12px;
+          font-size: 14px;
         }
 
         .introducer-edit-container {
@@ -870,10 +874,10 @@ const AllUsersManagement = () => {
 
         .introducer-input {
           width: 100%;
-          padding: 5px 6px;
+          padding: 6px 8px;
           border: 2px solid #667eea;
           border-radius: 4px;
-          font-size: 11px;
+          font-size: 13px;
           outline: none;
         }
 
@@ -893,9 +897,9 @@ const AllUsersManagement = () => {
         }
 
         .suggestion-item {
-          padding: 8px 10px;
+          padding: 10px 12px;
           cursor: pointer;
-          font-size: 12px;
+          font-size: 13px;
           border-bottom: 1px solid #f0f0f0;
         }
 
@@ -928,7 +932,7 @@ const AllUsersManagement = () => {
         .edit-icon {
           color: #667eea;
           opacity: 0.7;
-          font-size: 11px;
+          font-size: 13px;
           margin-left: 6px;
         }
 
@@ -941,7 +945,7 @@ const AllUsersManagement = () => {
           display: flex;
           flex-direction: column;
           gap: 6px;
-          padding: 6px;
+          padding: 8px;
           background: white;
           border: 1px solid #667eea;
           border-radius: 4px;
@@ -953,8 +957,8 @@ const AllUsersManagement = () => {
           align-items: center;
           gap: 6px;
           cursor: pointer;
-          font-size: 12px;
-          padding: 4px;
+          font-size: 14px;
+          padding: 5px;
         }
 
         .radio-option:hover {
@@ -972,9 +976,9 @@ const AllUsersManagement = () => {
           background: #f8f9fa;
           border: 1px solid #667eea;
           border-radius: 3px;
-          padding: 3px 8px;
+          padding: 4px 10px;
           cursor: pointer;
-          font-size: 11px;
+          font-size: 13px;
           color: #667eea;
         }
 
@@ -988,9 +992,9 @@ const AllUsersManagement = () => {
           color: white;
           border: none;
           border-radius: 4px;
-          padding: 5px 10px;
+          padding: 6px 12px;
           cursor: pointer;
-          font-size: 11px;
+          font-size: 13px;
           font-weight: 500;
           transition: all 0.2s;
         }
@@ -1038,11 +1042,6 @@ const AllUsersManagement = () => {
 
           .section-subtitle {
             font-size: 0.8rem;
-          }
-
-          /* Show scroll hint on mobile */}
-          .mobile-scroll-hint {
-            display: block;
           }
 
           /* Make table scrollable horizontally */
@@ -1171,6 +1170,11 @@ const AllUsersManagement = () => {
           .section-subtitle {
             font-size: 0.75rem;
             text-align: center;
+          }
+
+          /* Show scroll hint only on very small screens */
+          .mobile-scroll-hint {
+            display: block;
           }
 
           .network-table-container {
