@@ -717,9 +717,9 @@ const AllUsersManagement = () => {
         .network-table thead tr.grand-total-row th {
           background: linear-gradient(135deg, rgba(210, 180, 140, 0.95), rgba(188, 143, 143, 0.95));
           color: #fff;
-          padding: 8px 6px;
+          padding: 10px 8px;
           font-weight: 700;
-          font-size: 14px;
+          font-size: 16px;
           border-right: 1px solid rgba(255,255,255,0.2);
           text-align: center;
         }
@@ -737,9 +737,9 @@ const AllUsersManagement = () => {
         .network-table thead tr.separate-totals th {
           background: linear-gradient(135deg, #667eea, #764ba2);
           color: white;
-          padding: 8px 6px;
+          padding: 10px 8px;
           font-weight: 600;
-          font-size: 13px;
+          font-size: 15px;
           border-right: 1px solid rgba(255,255,255,0.2);
           text-align: center;
         }
